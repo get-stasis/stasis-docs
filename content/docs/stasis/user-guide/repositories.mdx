@@ -1,0 +1,103 @@
+---
+title: Repositories
+description: Create and manage Git repositories
+icon: GitBranch
+---
+
+# Repositories
+
+A repository is where your code lives. This page explains how to create, manage, and work with repositories in Stasis.
+
+## Creating a Repository
+
+### From the Web Interface
+
+1. Click the **+** button in the top-right corner of any page
+2. Enter a repository name (use lowercase, hyphens, no spaces)
+3. Optionally add a description
+4. Choose **Public** (anyone can see it) or **Private** (only you and people you invite)
+5. Click **Create Repository**
+
+### From the Command Line
+
+You can also create a repository by pushing to a name that doesn't exist yet:
+
+```bash
+mkdir my-project
+cd my-project
+git init
+echo "# My Project" > README.md
+git add README.md
+git commit -m "Initial commit"
+
+git remote add origin http://localhost/username/my-project.git
+git push -u origin main
+```
+
+## Repository Settings
+
+Click the **Settings** tab in any repository to change:
+
+- **Name** — rename the repository
+- **Description** — update the description
+- **Visibility** — switch between public and private
+- **Default Branch** — change which branch is shown by default
+
+## Branches
+
+Branches let you work on different features or fixes without affecting the main code.
+
+```bash
+git checkout -b feature/new-login
+git add .
+git commit -m "Add new login page"
+git push -u origin feature/new-login
+```
+
+Go to your repository and click the **Branches** tab to see all branches.
+
+## Tags
+
+Tags mark specific points in your repository's history, usually for releases.
+
+```bash
+git tag -a v1.0.0 -m "First release"
+git push origin --tags
+```
+
+## Contributors
+
+The **Contributors** tab shows everyone who has contributed to the repository.
+
+If your commits aren't linked to your profile, go to Settings → General and add your git email under "Linked Commit Emails".
+
+## Cloning
+
+```bash
+# HTTP
+git clone http://localhost/username/repo.git
+
+# SSH (requires SSH key in Settings → SSH Keys)
+git clone ssh://localhost:2222/username/repo.git
+
+# With token (for scripts/CI)
+git clone https://username:your-token@localhost/username/repo.git
+```
+
+## Deleting a Repository
+
+1. Go to **Settings** tab
+2. Scroll to **Danger Zone**
+3. Click **Delete Repository**
+4. Type the repository name to confirm
+
+<Callout type="warn">
+  This cannot be undone. All code, history, and data will be permanently deleted.
+</Callout>
+
+## Next Steps
+
+<Cards>
+  <Card title="Profiles" href="/docs/stasis/user-guide/profiles" description="Set up your user profile" />
+  <Card title="SSH Keys" href="/docs/stasis/user-guide/ssh-keys" description="Set up SSH authentication" />
+</Cards>

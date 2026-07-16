@@ -1,0 +1,114 @@
+---
+title: Profiles
+description: Customize your user profile
+icon: User
+---
+
+# Your Profile
+
+Your profile is how other people see you on Stasis. It shows your name, bio, avatar, and links to your other accounts.
+
+## Editing Your Profile
+
+1. Click your avatar in the top-right corner
+2. Click **Settings**
+3. You'll see the **General** page with your profile fields
+
+### Profile Fields
+
+| Field | What It Does | Example |
+|-------|--------------|---------|
+| **Username** | Your unique identifier on Stasis | `johndoe` |
+| **Display Name** | Your real name or preferred name | `John Doe` |
+| **Bio** | A short description about yourself (500 characters max) | `Full-stack developer working on open source projects` |
+| **Company** | Where you work | `Acme Corp` |
+| **Location** | Where you're based | `San Francisco, CA` |
+| **Website** | Your personal website or blog | `https://johndoe.com` |
+| **Avatar URL** | A link to your profile picture | `https://example.com/avatar.png` |
+
+## Profile README
+
+Stasis supports a special profile README that appears at the top of your profile page — similar to GitHub's profile README.
+
+### Setting Up Your Profile README
+
+1. Create a new repository with the same name as your username (e.g., `johndoe/johndoe`)
+2. Add a `README.md` file to it
+3. The content of that README will appear on your profile page
+
+```bash
+# Create the profile repo
+mkdir johndoe
+cd johndoe
+git init
+cat > README.md << 'EOF'
+# Hi, I'm John 👋
+
+I'm a full-stack developer passionate about open source.
+
+## What I'm Working On
+- 🔭 Building [Stasis](https://github.com/get-stasis/stasis)
+- 🌱 Learning Rust
+- 💬 Ask me about Go, React, or DevOps
+
+## Connect With Me
+- [Blog](https://johndoe.com)
+- [Twitter](https://twitter.com/johndoe)
+EOF
+
+git add README.md
+git commit -m "Add profile README"
+git remote add origin http://localhost/johndoe/johndoe.git
+git push -u origin main
+```
+
+Once you push, visit your profile page (click your username) to see it.
+
+## Contribution Graph
+
+Your profile page shows a contribution graph — a heatmap of your commit activity over the past year.
+
+### How It Works
+
+- Each square represents a day
+- Darker squares mean more commits
+- The graph pulls from all repositories you've contributed to
+- It uses the email addresses linked to your account
+
+### Linking Your Git Email
+
+If your commits aren't showing up on your graph, your git email might not match your Stasis email. To fix this:
+
+1. Go to Settings → General
+2. Scroll to "Linked Commit Emails"
+3. Add the email you use in git
+
+```bash
+# Check your git email
+git config user.email
+```
+
+You can add multiple email addresses if you use different ones for different projects.
+
+## Social Links
+
+You can add links to your other profiles (GitHub, Twitter, LinkedIn, etc.) that appear on your profile page.
+
+See [Social Links](/docs/stasis/user-guide/social-links) for details.
+
+## Viewing Someone Else's Profile
+
+Click on any username in Stasis to see their profile. You'll see:
+
+- Their name and bio
+- Their contribution graph
+- Their public repositories
+- Their social links
+- Their profile README (if they have one)
+
+## Next Steps
+
+<Cards>
+  <Card title="Social Links" href="/docs/stasis/user-guide/social-links" description="Add social media links to your profile" />
+  <Card title="SSH Keys" href="/docs/stasis/user-guide/ssh-keys" description="Set up SSH authentication" />
+</Cards>

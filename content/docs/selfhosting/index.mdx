@@ -1,0 +1,56 @@
+---
+title: Self-Hosting
+description: Deploy and operate Stasis on your own infrastructure
+icon: Server
+---
+
+# Self-Hosting Guide
+
+Learn how to deploy and operate Stasis on your own infrastructure.
+
+## Deployment Options
+
+<Cards>
+  <Card title="Docker Compose" href="/docs/selfhosting/docker" description="Recommended for most deployments" />
+  <Card title="NGINX Configuration" href="/docs/selfhosting/nginx" description="Reverse proxy setup" />
+  <Card title="SSL/TLS" href="/docs/selfhosting/ssl" description="Secure your deployment" />
+</Cards>
+
+## Operations
+
+<Cards>
+  <Card title="Updating" href="/docs/selfhosting/updating" description="Keep Stasis up to date" />
+  <Card title="Backup" href="/docs/selfhosting/backup" description="Backup and restore procedures" />
+  <Card title="Monitoring" href="/docs/selfhosting/monitoring" description="Monitor your deployment" />
+</Cards>
+
+## Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/get-stasis/stasis.git
+cd stasis
+
+# Copy environment file
+cp configs/.env.example .env
+
+# Edit .env with your settings
+vim .env
+
+# Start all services
+docker compose up -d
+```
+
+## Requirements
+
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| CPU | 2 cores | 4 cores |
+| RAM | 2 GB | 4 GB |
+| Storage | 10 GB | 50 GB |
+| OS | Linux | Ubuntu 22.04+ |
+
+## Support
+
+- [GitHub Issues](https://github.com/get-stasis/stasis/issues)
+- [Discussions](https://github.com/get-stasis/stasis/discussions)

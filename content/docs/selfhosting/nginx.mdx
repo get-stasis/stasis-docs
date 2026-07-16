@@ -1,0 +1,158 @@
+---
+title: NGINX Configuration
+description: Set up NGINX as a reverse proxy
+icon: Server
+---
+
+# NGINX Configuration
+
+NGINX is the recommended way to expose Stasis to the internet. It handles SSL termination, routing, and security headers.
+
+## Basic Configuration
+
+Create a file at `deploy/nginx.conf`:
+
+```nginx
+events {
+    worker_connections 1024;
+}
+
+http {
+    # Rate limiting
+    limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+
+    upstream api {
+        server api:8080;
+    }
+
+    upstream web {
+        server web:3000;
+    }
+
+    server {
+        listen 80;
+        server_name your-domain.com;
+
+        # Redirect HTTP to HTTPS
+        return 301 https://$host$request_uri;
+    }
+
+    server {
+        listen 443 ssl http2;
+        server_name your-domain.com;
+
+        # SSL certificates
+        ssl_certificate /etc/nginx/certs/fullchain.pem;
+        ssl_certificate_key /etc/nginx/certs/privkey.pem;
+
+        # Security headers
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+        # API routes
+        location /api/ {
+            limit_req zone=api burst=20 nodelay;
+            proxy_pass http://api;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Git Smart HTTP
+        location ~ ^/.+/.+/(info/refs|git-upload-pack|git-receive-pack)$ {
+            proxy_pass http://api;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            # Increase timeouts for large pushes
+            proxy_read_timeout 600s;
+            proxy_send_timeout 600s;
+        }
+
+        # Web frontend
+        location / {
+            proxy_pass http://web;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+}
+```
+
+## Docker Compose Integration
+
+The `docker-compose.yml` includes NGINX:
+
+```yaml
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      - api
+      - web
+```
+
+## Getting SSL Certificates
+
+See [SSL/TLS](/docs/selfhosting/ssl) for how to get and configure SSL certificates.
+
+## Testing
+
+After configuring NGINX:
+
+1. Restart the services:
+   ```bash
+   docker compose restart nginx
+   ```
+
+2. Check NGINX configuration:
+   ```bash
+   docker compose exec nginx nginx -t
+   ```
+
+3. Check the logs:
+   ```bash
+   docker compose logs nginx
+   ```
+
+## Troubleshooting
+
+### 502 Bad Gateway
+
+- Check that the API and web services are running: `docker compose ps`
+- Check NGINX logs: `docker compose logs nginx`
+
+### SSL Certificate Errors
+
+- Make sure the certificate files exist in the `certs/` directory
+- Check that the paths in `nginx.conf` match the actual file locations
+- See [SSL/TLS](/docs/selfhosting/ssl) for certificate setup
+
+### Slow Git Pushes
+
+Increase the proxy timeouts in the git location block:
+
+```nginx
+proxy_read_timeout 1200s;
+proxy_send_timeout 1200s;
+```
+
+## Next Steps
+
+<Cards>
+  <Card title="SSL/TLS" href="/docs/selfhosting/ssl" description="Set up SSL certificates" />
+  <Card title="Docker" href="/docs/selfhosting/docker" description="Docker deployment overview" />
+</Cards>

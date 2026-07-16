@@ -1,0 +1,168 @@
+---
+title: Authentication
+description: How to sign in to Stasis
+icon: Lock
+---
+
+# Authentication
+
+Stasis requires an OIDC (OpenID Connect) identity provider for authentication. There is no built-in username/password system — you must configure OIDC before anyone can sign in.
+
+## How Sign-In Works
+
+1. You open Stasis in your browser
+2. You click "Sign in with OIDC"
+3. You're redirected to your identity provider (Google, GitHub, Auth0, etc.)
+4. You sign in there
+5. You're redirected back to Stasis, now logged in
+
+The first user to sign in automatically becomes the admin.
+
+## Setting Up OIDC
+
+You need to configure these environment variables in your `.env` file:
+
+```bash
+# Required: Enable OIDC
+STASIS_OIDC_ENABLED=true
+
+# Required: Your identity provider's URL
+STASIS_OIDC_ISSUER_URL=https://your-identity-provider.com
+
+# Required: The client ID from your identity provider
+STASIS_OIDC_CLIENT_ID=your-client-id
+
+# Required: The client secret from your identity provider
+STASIS_OIDC_CLIENT_SECRET=your-client-secret
+
+# Required: A random string for signing JWTs (minimum 32 characters)
+STASIS_OIDC_JWT_SECRET=your-random-secret-at-least-32-characters-long
+```
+
+### Getting OIDC Credentials
+
+Choose your identity provider and follow these steps:
+
+**Google:**
+1. Go to [Google Cloud Console](https://console.cloud.google.com)
+2. Create a new project or select an existing one
+3. Go to APIs & Services → Credentials
+4. Click "Create Credentials" → "OAuth client ID"
+5. Set application type to "Web application"
+6. Add `http://your-domain.com/api/v1/auth/oidc/callback` as an authorized redirect URI
+7. Copy the Client ID and Client Secret
+
+**GitHub:**
+1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
+2. Click "New OAuth App"
+3. Set the authorization callback URL to `http://your-domain.com/api/v1/auth/oidc/callback`
+4. Copy the Client ID
+5. Generate a Client Secret
+
+**Auth0:**
+1. Go to your Auth0 dashboard
+2. Create a new application (Regular Web Application)
+3. Go to Settings
+4. Add `http://your-domain.com/api/v1/auth/oidc/callback` to Allowed Callback URLs
+5. Copy the Client ID and Client Secret
+
+**Keycloak:**
+1. Create a new client in your Keycloak realm
+2. Set the valid redirect URI to `http://your-domain.com/api/v1/auth/oidc/callback`
+3. Copy the Client ID and Client Secret
+
+<Callout type="info">
+  Replace `your-domain.com` with your actual domain. For local development, use `localhost`.
+</Callout>
+
+## API Tokens
+
+For scripts, CI/CD pipelines, and automated tools, use API tokens instead of browser sign-in.
+
+### Creating a Token
+
+1. Sign in to Stasis
+2. Go to Settings → Tokens
+3. Click "Generate New Token"
+4. Give it a name (like "CI Pipeline" or "My Script")
+5. Copy the token immediately — you won't see it again
+
+### Using a Token
+
+```bash
+# With curl
+curl -H "Authorization: Bearer your-token-here" http://localhost/api/v1/repos
+
+# With git (HTTPS)
+git clone https://username:your-token@localhost/username/repo.git
+
+# With git (set in environment)
+export STASIS_TOKEN=your-token
+git clone https://username:${STASIS_TOKEN}@localhost/username/repo.git
+```
+
+### Token Security
+
+- **Never commit tokens to version control**
+- **Use environment variables** in scripts and CI/CD
+- **Rotate tokens** if you suspect they're compromised
+- **Delete unused tokens** from Settings → Tokens
+
+## SSH Keys
+
+For git operations over SSH, add your SSH public key to Stasis.
+
+### Adding an SSH Key
+
+1. Generate an SSH key if you don't have one:
+   ```bash
+   ssh-keygen -t ed25519 -C "your-email@example.com"
+   ```
+
+2. Copy your public key:
+   ```bash
+   cat ~/.ssh/id_ed25519.pub
+   ```
+
+3. In Stasis, go to Settings → SSH Keys
+4. Click "Add SSH Key"
+5. Paste your public key and give it a name
+
+### Using SSH
+
+```bash
+git clone ssh://localhost:2222/username/repo.git
+```
+
+## Troubleshooting
+
+### "OIDC not configured" error
+
+Make sure all required OIDC environment variables are set:
+```bash
+docker compose logs api | grep -i oidc
+```
+
+### Redirect loop after sign-in
+
+- Check that the redirect URI in your identity provider matches exactly: `http://your-domain.com/api/v1/auth/oidc/callback`
+- For local development, use `http://localhost/api/v1/auth/oidc/callback`
+
+### "Invalid token" errors
+
+- Check that `STASIS_OIDC_JWT_SECRET` is at least 32 characters
+- Make sure it's the same value across all API instances
+
+### SSH connection refused
+
+- Check the SSH server is running: `docker compose ps`
+- Verify your SSH key is added in Settings → SSH Keys
+- Try with verbose output: `ssh -v -p 2222 localhost`
+
+## Next Steps
+
+<Cards>
+  <Card title="Repositories" href="/docs/stasis/user-guide/repositories" description="Create and manage repositories" />
+  <Card title="Profiles" href="/docs/stasis/user-guide/profiles" description="Set up your user profile" />
+  <Card title="Tokens" href="/docs/stasis/user-guide/tokens" description="Manage API tokens" />
+</Cards>

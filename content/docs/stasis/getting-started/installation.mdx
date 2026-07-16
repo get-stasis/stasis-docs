@@ -1,0 +1,135 @@
+---
+title: Installation
+description: Install and set up Stasis Git server
+icon: Download
+---
+
+# Installation
+
+This guide will help you install and set up Stasis Git server on your system.
+
+## Prerequisites
+
+Before installing Stasis, ensure you have the following:
+
+- Docker and Docker Compose
+- Git
+- A domain name (for production deployment)
+- SSL certificate (recommended for production)
+
+## Quick Start with Docker
+
+The easiest way to get started with Stasis is using Docker Compose.
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/get-stasis/stasis.git
+cd stasis
+```
+
+### 2. Configure Environment
+
+```bash
+# Copy the example environment file
+cp configs/.env.example .env
+
+# Edit the environment file
+vim .env
+```
+
+Required environment variables:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `STASIS_DB_PASSWORD` | PostgreSQL password | `your-secure-password` |
+| `STASIS_OIDC_JWT_SECRET` | JWT signing secret (min 32 chars) | `your-jwt-secret-minimum-32-chars` |
+
+### 3. Start Services
+
+```bash
+# Start all services
+docker compose up -d
+
+# View logs
+docker compose logs -f
+
+# Check status
+docker compose ps
+```
+
+### 4. Access Stasis
+
+Once all services are running:
+
+- **Web Interface**: http://localhost
+- **API**: http://localhost/api
+- **SSH**: localhost:2222
+
+## Development Setup
+
+For development, you can run the components individually.
+
+### Backend (Go)
+
+```bash
+# Install Go 1.24+
+# https://golang.org/doc/install
+
+# Install dependencies
+go mod download
+
+# Run the API server
+go run ./cmd/server
+```
+
+### Frontend (Next.js)
+
+```bash
+# Install Bun (recommended) or Node.js 18+
+# https://bun.sh
+
+# Navigate to web directory
+cd web
+
+# Install dependencies
+bun install
+
+# Run development server
+bun run dev
+```
+
+## Verification
+
+After installation, verify everything is working:
+
+### Check API Health
+
+```bash
+curl http://localhost/api/v1/health
+```
+
+Expected response:
+```json
+{
+  "status": "ok",
+  "version": "1.0.0"
+}
+```
+
+### Check Web Interface
+
+Open http://localhost in your browser. You should see the Stasis login page.
+
+### Check SSH Access
+
+```bash
+ssh -p 2222 localhost
+```
+
+## Next Steps
+
+<Cards>
+  <Card title="Quick Start" href="/docs/stasis/getting-started/quick-start" description="Create your first repository" />
+  <Card title="Configuration" href="/docs/stasis/getting-started/configuration" description="Configure Stasis for your environment" />
+</Cards>

@@ -1,0 +1,92 @@
+---
+title: Configuration
+description: Configure Stasis for your environment
+icon: Settings
+---
+
+# Configuration
+
+Stasis is configured through environment variables and configuration files.
+
+## Environment Variables
+
+### Database Configuration
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `STASIS_DATABASE_HOST` | PostgreSQL host | `localhost` |
+| `STASIS_DATABASE_PORT` | PostgreSQL port | `5432` |
+| `STASIS_DATABASE_USER` | PostgreSQL username | `stasis` |
+| `STASIS_DB_PASSWORD` | PostgreSQL password | **Required** |
+| `STASIS_DATABASE_DBNAME` | PostgreSQL database name | `stasis` |
+
+### Server Configuration
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `STASIS_SERVER_HOST` | HTTP server host | `0.0.0.0` |
+| `STASIS_SERVER_PORT` | HTTP server port | `8080` |
+| `STASIS_SERVER_MODE` | Server mode (debug/release) | `release` |
+
+### SSH Configuration
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `STASIS_SSH_HOST` | SSH server host | `0.0.0.0` |
+| `STASIS_SSH_PORT` | SSH server port | `2222` |
+
+### OIDC Configuration
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `STASIS_OIDC_ENABLED` | Enable OIDC authentication | `false` |
+| `STASIS_OIDC_ISSUER_URL` | OIDC issuer URL | - |
+| `STASIS_OIDC_CLIENT_ID` | OIDC client ID | - |
+| `STASIS_OIDC_CLIENT_SECRET` | OIDC client secret | - |
+| `STASIS_OIDC_JWT_SECRET` | JWT signing secret (min 32 chars) | **Required** |
+
+## Docker Compose Configuration
+
+The `docker-compose.yml` file configures all services:
+
+```yaml
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api
+      - web
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    environment:
+      - STASIS_DATABASE_HOST=postgres
+      - STASIS_DB_PASSWORD=${STASIS_DB_PASSWORD}
+      - STASIS_OIDC_JWT_SECRET=${STASIS_OIDC_JWT_SECRET}
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost/api
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: stasis
+      POSTGRES_PASSWORD: ${STASIS_DB_PASSWORD}
+      POSTGRES_DB: stasis
+```
+
+## Next Steps
+
+<Cards>
+  <Card title="Authentication" href="/docs/stasis/user-guide/authentication" description="Set up OIDC authentication" />
+  <Card title="Self-Hosting" href="/docs/selfhosting/docker" description="Deploy to production" />
+</Cards>

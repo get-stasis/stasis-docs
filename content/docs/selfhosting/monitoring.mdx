@@ -1,0 +1,143 @@
+---
+title: Monitoring
+description: Monitor your Stasis instance
+icon: Activity
+---
+
+# Monitoring
+
+Monitoring helps you catch problems before they affect users. This page explains how to check if Stasis is healthy and how to set up alerts.
+
+## Health Check Endpoint
+
+Stasis exposes a health check endpoint:
+
+```bash
+curl http://localhost/api/v1/health
+```
+
+Expected response:
+```json
+{
+  "status": "ok",
+  "version": "1.0.0"
+}
+```
+
+## Docker Health Checks
+
+Docker Compose includes health checks for all services. Check status with:
+
+```bash
+docker compose ps
+```
+
+Healthy services show `(healthy)` in the STATUS column.
+
+## Checking Logs
+
+### API Server Logs
+
+```bash
+# Follow logs in real-time
+docker compose logs -f api
+
+# View last 100 lines
+docker compose logs --tail 100 api
+
+# Search for errors
+docker compose logs api | grep -i error
+```
+
+### Web Frontend Logs
+
+```bash
+docker compose logs -f web
+```
+
+### NGINX Logs
+
+```bash
+docker compose logs -f nginx
+```
+
+### PostgreSQL Logs
+
+```bash
+docker compose logs -f postgres
+```
+
+## Database Monitoring
+
+### Connection Count
+
+```bash
+docker compose exec postgres psql -U stasis -c "SELECT count(*) FROM pg_stat_activity;"
+```
+
+### Database Size
+
+```bash
+docker compose exec postgres psql -U stasis -c "SELECT pg_size_pretty(pg_database_size('stasis'));"
+```
+
+### Active Queries
+
+```bash
+docker compose exec postgres psql -U stasis -c "SELECT pid, query, state FROM pg_stat_activity WHERE state = 'active';"
+```
+
+## Disk Space
+
+Repository data grows over time. Monitor disk usage:
+
+```bash
+# Check Docker volume usage
+docker system df -v
+
+# Check repository data size
+docker run --rm -v stasis_repo_data:/data alpine du -sh /data
+```
+
+## Setting Up Alerts
+
+### Simple Uptime Monitoring
+
+Use a service like UptimeRobot, Pingdom, or Uptime Kuma to monitor the health endpoint:
+
+```
+https://your-domain.com/api/v1/health
+```
+
+### Docker Container Monitoring
+
+Use Docker's built-in stats:
+
+```bash
+docker stats --no-stream
+```
+
+Or set up Prometheus + Grafana for more detailed monitoring.
+
+## Performance Metrics
+
+### API Response Time
+
+```bash
+curl -o /dev/null -s -w "Time: %{time_total}s\n" http://localhost/api/v1/health
+```
+
+### Git Operation Performance
+
+Test clone speed:
+
+```bash
+time git clone http://localhost/username/repo.git
+```
+
+## Next Steps
+
+<Cards>
+  <Card title="Backup" href="/docs/selfhosting/backup" description="Back up your Stasis instance" />
+  <Card title="Troubleshooting" href="/docs/selfhosting/troubleshooting" description="Common issues and solutions" />
+</Cards>

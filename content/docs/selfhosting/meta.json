@@ -1,0 +1,18 @@
+{
+  "title": "Self-Hosting",
+  "description": "Deployment & Operations",
+  "icon": "Server",
+  "pages": [
+    "index",
+    "---Deployment---",
+    "docker",
+    "nginx",
+    "ssl",
+    "---Operations---",
+    "updating",
+    "backup",
+    "monitoring",
+    "---Troubleshooting---",
+    "troubleshooting"
+  ]
+}

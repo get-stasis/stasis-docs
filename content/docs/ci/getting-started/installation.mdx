@@ -1,0 +1,58 @@
+---
+title: Installation
+description: Install and set up Stasis CI Runner
+icon: Download
+---
+
+# CI Runner Installation
+
+## Prerequisites
+
+- Docker and Docker Compose
+- Rust 1.94+ (for local development)
+
+## Quick Start with Docker
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/get-stasis/stasis-ci.git
+cd stasis-ci
+```
+
+### 2. Configure Environment
+
+```bash
+cp .env.example .env
+vim .env
+```
+
+### 3. Start Development Environment
+
+```bash
+make dev-up
+```
+
+### 4. View Logs
+
+```bash
+make dev-logs
+```
+
+## Development Commands
+
+| Command | Description |
+|---------|-------------|
+| `make dev-up` | Start development environment |
+| `make dev-down` | Stop development environment |
+| `make dev-logs` | View CI runner logs |
+| `make dev-build` | Rebuild development container |
+| `make build` | Build locally |
+| `make test` | Run tests |
+
+## Next Steps
+
+<Cards>
+  <Card title="Quick Start" href="/docs/ci/getting-started/quick-start" description="Submit your first job" />
+  <Card title="Configuration" href="/docs/ci/runner-guide/configuration" description="Configure the runner" />
+</Cards>

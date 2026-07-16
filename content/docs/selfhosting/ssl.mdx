@@ -1,0 +1,129 @@
+---
+title: SSL/TLS
+description: Set up HTTPS for your Stasis instance
+icon: Lock
+---
+
+# SSL/TLS
+
+HTTPS is required for production deployments. This page explains how to get and configure SSL certificates.
+
+## Getting a Certificate
+
+### Option 1: Let's Encrypt (Free)
+
+Let's Encrypt provides free SSL certificates. Use Certbot to get one:
+
+```bash
+# Install Certbot
+sudo apt install certbot
+
+# Get a certificate (standalone mode)
+sudo certbot certonly --standalone -d your-domain.com
+```
+
+The certificate files will be at:
+- `/etc/letsencrypt/live/your-domain.com/fullchain.pem`
+- `/etc/letsencrypt/live/your-domain.com/privkey.pem`
+
+### Option 2: Commercial Certificate
+
+Buy a certificate from a CA (DigiCert, Comodo, etc.) and follow their instructions. You'll get:
+- A certificate file (`.crt` or `.pem`)
+- A private key file (`.key`)
+- A chain file (optional)
+
+## Configuring NGINX
+
+Update your `deploy/nginx.conf` to use the certificate:
+
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name your-domain.com;
+
+    ssl_certificate /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+
+    # SSL settings
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256;
+    ssl_prefer_server_ciphers off;
+
+    # ... rest of your config
+}
+```
+
+## Docker Compose
+
+Mount the certificate files:
+
+```yaml
+services:
+  nginx:
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt/live/your-domain.com:/etc/nginx/certs:ro
+```
+
+Or copy the certificate files to a local `certs/` directory:
+
+```bash
+mkdir -p certs
+cp /etc/letsencrypt/live/your-domain.com/fullchain.pem certs/
+cp /etc/letsencrypt/live/your-domain.com/privkey.pem certs/
+```
+
+## Auto-Renewal
+
+Let's Encrypt certificates expire after 90 days. Set up auto-renewal:
+
+```bash
+# Test renewal
+sudo certbot renew --dry-run
+
+# Add to crontab
+sudo crontab -e
+# Add this line:
+0 0 1 * * certbot renew && docker compose restart nginx
+```
+
+## Testing
+
+After configuring SSL:
+
+1. Restart NGINX:
+   ```bash
+   docker compose restart nginx
+   ```
+
+2. Check the certificate:
+   ```bash
+   openssl s_client -connect your-domain.com:443
+   ```
+
+3. Visit `https://your-domain.com` in your browser
+
+## Troubleshooting
+
+### "SSL_ERROR_RX_RECORD_TOO_LONG"
+
+- NGINX isn't configured for SSL on port 443
+- Check that `listen 443 ssl` is in your config
+
+### Certificate not trusted
+
+- Make sure you're using the full chain certificate (`fullchain.pem`)
+- Check that the certificate matches the domain name
+
+### Mixed content warnings
+
+- Make sure all resources use HTTPS
+- Update `NEXT_PUBLIC_API_URL` to use `https://`
+
+## Next Steps
+
+<Cards>
+  <Card title="NGINX" href="/docs/selfhosting/nginx" description="Configure NGINX reverse proxy" />
+  <Card title="Backup" href="/docs/selfhosting/backup" description="Back up your Stasis instance" />
+</Cards>

@@ -1,10 +1,34 @@
 import { defineConfig, defineDocs } from 'fumadocs-mdx/config';
 import { metaSchema, pageSchema } from 'fumadocs-core/source/schema';
 
-// You can customize Zod schemas for frontmatter and `meta.json` here
-// see https://fumadocs.dev/docs/mdx/collections
-export const docs = defineDocs({
-  dir: 'content/docs',
+export const stasis = defineDocs({
+  dir: 'content/docs/stasis',
+  docs: {
+    schema: pageSchema,
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
+  },
+  meta: {
+    schema: metaSchema,
+  },
+});
+
+export const ci = defineDocs({
+  dir: 'content/docs/ci',
+  docs: {
+    schema: pageSchema,
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
+  },
+  meta: {
+    schema: metaSchema,
+  },
+});
+
+export const selfhosting = defineDocs({
+  dir: 'content/docs/selfhosting',
   docs: {
     schema: pageSchema,
     postprocess: {
@@ -17,7 +41,5 @@ export const docs = defineDocs({
 });
 
 export default defineConfig({
-  mdxOptions: {
-    // MDX options
-  },
+  mdxOptions: {},
 });

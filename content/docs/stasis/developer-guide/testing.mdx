@@ -1,0 +1,171 @@
+---
+title: Testing
+description: How to run and write tests
+icon: Beaker
+---
+
+# Testing
+
+Stasis has tests for both the Go backend and the Next.js frontend. This page explains how to run them and how to write new tests.
+
+## Running Tests
+
+### Go Backend
+
+```bash
+# Run all tests
+go test ./...
+
+# Run tests with verbose output
+go test -v ./...
+
+# Run tests for a specific package
+go test ./internal/application/service/...
+
+# Run a specific test
+go test -run TestCreateUser ./internal/application/service/
+```
+
+### Frontend Build Check
+
+The frontend doesn't have a test suite yet, but you can verify it compiles:
+
+```bash
+cd web
+bun run build
+```
+
+If the build succeeds, your changes don't break the frontend.
+
+## Writing Tests
+
+### Go Test Conventions
+
+Tests live alongside the code they test:
+
+```
+internal/
+  application/
+    service/
+      user_service.go
+      user_service_test.go    # Tests for user_service.go
+```
+
+Test files end with `_test.go`. Test functions start with `Test`:
+
+```go
+package service
+
+import (
+    "testing"
+)
+
+func TestCreateUser(t *testing.T) {
+    // Your test code here
+}
+```
+
+### Table-Driven Tests
+
+Go favors table-driven tests:
+
+```go
+func TestValidateUsername(t *testing.T) {
+    tests := []struct {
+        name    string
+        input   string
+        wantErr bool
+    }{
+        {"valid username", "johndoe", false},
+        {"too short", "ab", true},
+        {"starts with number", "1user", true},
+        {"has spaces", "john doe", true},
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            err := validateUsername(tt.input)
+            if (err != nil) != tt.wantErr {
+                t.Errorf("validateUsername(%q) error = %v, wantErr %v", tt.input, err, tt.wantErr)
+            }
+        })
+    }
+}
+```
+
+### Testing with Dependencies
+
+For tests that need a database or other dependencies, use interfaces:
+
+```go
+type UserRepository interface {
+    Create(ctx context.Context, user *User) error
+    FindByID(ctx context.Context, id uuid.UUID) (*User, error)
+    // ...
+}
+```
+
+Then create a mock for testing:
+
+```go
+type MockUserRepository struct {
+    users map[uuid.UUID]*User
+}
+
+func (m *MockUserRepository) Create(ctx context.Context, user *User) error {
+    m.users[user.ID] = user
+    return nil
+}
+```
+
+## Test Coverage
+
+To see test coverage:
+
+```bash
+# Generate coverage report
+go test -coverprofile=coverage.out ./...
+
+# View coverage in browser
+go tool cover -html=coverage.out
+```
+
+## Continuous Integration
+
+When you submit a pull request, GitHub Actions runs:
+
+1. `go test ./...` — all Go tests
+2. `go build ./...` — verify the code compiles
+3. `cd web && bun run build` — verify the frontend builds
+
+Your PR won't be merged if any of these fail.
+
+## Common Issues
+
+### Tests fail with "connection refused"
+
+Tests that need a database will fail if PostgreSQL isn't running:
+
+```bash
+docker compose up -d postgres
+```
+
+### Tests fail with "permission denied"
+
+Make sure your `.env` file has the correct database credentials.
+
+### Frontend build fails with type errors
+
+Run the TypeScript checker:
+
+```bash
+cd web
+bun run types:check
+```
+
+## Next Steps
+
+<Cards>
+  <Card title="Contributing" href="/docs/stasis/developer-guide/contributing" description="How to contribute to Stasis" />
+  <Card title="Architecture" href="/docs/stasis/developer-guide/architecture" description="Understand the codebase structure" />
+</Cards>

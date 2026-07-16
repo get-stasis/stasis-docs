@@ -1,0 +1,147 @@
+---
+title: Tokens
+description: Use API tokens for scripts and CI/CD
+icon: Shield
+---
+
+# API Tokens
+
+API tokens let you authenticate with Stasis from scripts, CI/CD pipelines, and other automated tools. Unlike [SSH keys](/docs/stasis/user-guide/ssh-keys), tokens work over HTTPS and can be scoped to specific permissions.
+
+## When to Use Tokens
+
+- **CI/CD pipelines** — automated builds and deployments
+- **Scripts** — backup scripts, automation tools
+- **Git over HTTPS** — cloning and pushing without entering a password
+- **API access** — using the [Stasis REST API](/docs/stasis/api-reference)
+
+For interactive use (your daily git work), [SSH keys](/docs/stasis/user-guide/ssh-keys) are usually a better choice.
+
+## Creating a Token
+
+1. [Sign in to Stasis](/docs/stasis/user-guide/authentication)
+2. Go to Settings → Tokens
+3. Click "Generate New Token"
+4. Enter a name (e.g., "GitHub Actions", "Backup Script")
+5. Optionally set an expiration date
+6. Click "Generate"
+7. **Copy the token immediately** — you won't see it again
+
+<Callout type="warn">
+  Tokens are shown only once. If you lose it, you'll need to create a new one.
+</Callout>
+
+## Using Tokens
+
+### With Git (HTTPS)
+
+```bash
+# Clone with token
+git clone https://username:your-token@localhost/username/repo.git
+
+# Set remote for existing repository
+git remote set-url origin https://username:your-token@localhost/username/repo.git
+
+# Push
+git push origin main
+```
+
+### With the API
+
+```bash
+# List repositories
+curl -H "Authorization: Bearer your-token" http://localhost/api/v1/repos
+
+# Get user profile
+curl -H "Authorization: Bearer your-token" http://localhost/api/v1/users/me
+```
+
+See the [API Reference](/docs/stasis/api-reference) for all available endpoints.
+
+### With Environment Variables
+
+For scripts and CI/CD, store the token in an environment variable:
+
+```bash
+export STASIS_TOKEN=your-token
+git clone https://username:${STASIS_TOKEN}@localhost/username/repo.git
+```
+
+In CI/CD systems, use their secrets management:
+- **GitHub Actions**: `${{ secrets.STASIS_TOKEN }}`
+- **GitLab CI**: `$STASIS_TOKEN`
+- **Jenkins**: Credentials plugin
+
+## Managing Tokens
+
+### Viewing Your Tokens
+
+Go to Settings → Tokens to see all your tokens. Each token shows:
+- The name you gave it
+- When it was created
+- When it expires (if you set an expiration)
+- When it was last used
+
+### Revoking a Token
+
+1. Go to Settings → Tokens
+2. Find the token you want to revoke
+3. Click "Revoke"
+
+After revoking, the token stops working immediately. Any scripts or CI/CD pipelines using it will fail until you update them with a new token.
+
+## Token Security
+
+### Best Practices
+
+- **One token per use case** — don't reuse tokens across different scripts or services
+- **Set expiration dates** — for temporary access or CI/CD pipelines
+- **Use environment variables** — never hardcode tokens in scripts
+- **Revoke unused tokens** — if you're not using a token, delete it
+- **Rotate periodically** — create new tokens and revoke old ones
+
+### What to Do If a Token Is Compromised
+
+1. Go to Settings → Tokens
+2. Revoke the compromised token immediately
+3. Create a new token
+4. Update any scripts or CI/CD pipelines using the old token
+5. Check your repository activity for any unauthorized commits
+
+## Troubleshooting
+
+### "Authentication failed" when using a token
+
+- Make sure the token hasn't been revoked (Settings → Tokens)
+- Check that you're using the token correctly:
+  ```bash
+  # Correct
+  git clone https://username:your-token@localhost/repo.git
+
+  # Wrong (missing username)
+  git clone https://your-token@localhost/repo.git
+  ```
+
+### "Token expired" errors
+
+- Create a new token in Settings → Tokens
+- Update your scripts or CI/CD pipelines with the new token
+
+### Token works with API but not with git
+
+Make sure you're including your username in the URL:
+```bash
+# Correct
+git clone https://username:your-token@localhost/repo.git
+
+# Wrong
+git clone https://your-token@localhost/repo.git
+```
+
+## Next Steps
+
+<Cards>
+  <Card title="API Reference" href="/docs/stasis/api-reference" description="Explore the REST API" />
+  <Card title="CI/CD" href="/docs/ci" description="Set up automated builds" />
+  <Card title="Authentication" href="/docs/stasis/user-guide/authentication" description="Back to authentication overview" />
+</Cards>

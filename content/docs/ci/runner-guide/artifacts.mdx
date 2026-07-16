@@ -1,0 +1,130 @@
+---
+title: Artifacts
+description: Store and retrieve build artifacts
+icon: Package
+---
+
+# Artifacts
+
+Artifacts are files produced by your CI pipeline — compiled binaries, test reports, documentation builds, etc. You can store them and download them later.
+
+## Uploading Artifacts
+
+In your `runner.yaml`, use the `upload-artifact` action:
+
+```yaml
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: make build
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-app
+          path: ./build/my-app
+```
+
+## Downloading Artifacts
+
+Download artifacts from the CI UI:
+
+1. Go to your repository's **CI** tab
+2. Click on a completed job
+3. Scroll to the **Artifacts** section
+4. Click **Download** next to the artifact you want
+
+## Artifact Configuration
+
+Artifacts are configured in the CI runner's `config.yaml`. See [Configuration](/docs/ci/runner-guide/configuration) for details.
+
+### Local Storage
+
+By default, artifacts are stored on the CI runner's filesystem:
+
+```yaml
+artifacts:
+  storage_type: local
+  local_path: /app/artifacts
+```
+
+### S3 Storage
+
+For production, use S3-compatible storage:
+
+```yaml
+artifacts:
+  storage_type: s3
+  s3:
+    endpoint: https://s3.amazonaws.com
+    bucket: my-ci-artifacts
+    region: us-east-1
+    access_key: AKIA...
+    secret_key: ...
+```
+
+## Retention
+
+Artifacts are kept for 30 days by default. After that, they're automatically deleted.
+
+To change retention, update the CI runner configuration:
+
+```yaml
+artifacts:
+  retention_days: 90
+```
+
+## Size Limits
+
+- Maximum artifact size: 500 MB
+- Maximum total artifacts per job: 2 GB
+
+## Examples
+
+### Upload Test Reports
+
+```yaml
+- name: Run tests
+  run: npm test -- --reporter=junit --outputFile=test-results.xml
+
+- name: Upload test results
+  uses: actions/upload-artifact@v4
+  with:
+    name: test-results
+    path: test-results.xml
+```
+
+### Upload Multiple Files
+
+```yaml
+- name: Upload build outputs
+  uses: actions/upload-artifact@v4
+  with:
+    name: build-outputs
+    path: |
+      ./build/my-app
+      ./build/config.yaml
+      ./docs/
+```
+
+### Upload with Retention
+
+```yaml
+- name: Upload temporary artifact
+  uses: actions/upload-artifact@v4
+  with:
+    name: temp-data
+    path: ./data/
+    retention-days: 7
+```
+
+## Next Steps
+
+<Cards>
+  <Card title="Conditions" href="/docs/ci/runner-guide/conditions" description="Conditional step execution" />
+  <Card title="runner.yaml" href="/docs/ci/runner-guide/runner-yaml" description="Pipeline configuration reference" />
+</Cards>

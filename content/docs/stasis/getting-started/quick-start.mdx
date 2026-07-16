@@ -1,0 +1,62 @@
+---
+title: Quick Start
+description: Get started with Stasis in 5 minutes
+icon: Zap
+---
+
+# Quick Start
+
+This guide will help you get started with Stasis quickly.
+
+## 1. Access Stasis
+
+Open your browser and navigate to your Stasis instance:
+
+```
+http://localhost
+```
+
+## 2. Create an Account
+
+The first user to register automatically becomes the admin.
+
+## 3. Create a Repository
+
+1. Click the "+" button in the top right
+2. Enter a repository name
+3. Choose visibility (public/private)
+4. Click "Create Repository"
+
+## 4. Clone and Push
+
+```bash
+# Clone the repository
+git clone http://localhost/username/my-project.git
+
+# Navigate to the repository
+cd my-project
+
+# Create a file
+echo "# My Project" > README.md
+
+# Add and commit
+git add README.md
+git commit -m "Initial commit"
+
+# Push to Stasis
+git push origin main
+```
+
+## 5. Set Up Your Profile
+
+1. Go to Settings → General
+2. Add your display name, bio, and avatar
+3. Add social links (GitHub, Twitter, LinkedIn, etc.)
+4. Link your commit email addresses
+
+## Next Steps
+
+<Cards>
+  <Card title="User Guide" href="/docs/stasis/user-guide/authentication" description="Learn about all features" />
+  <Card title="API Reference" href="/docs/stasis/api-reference" description="Explore the REST API" />
+</Cards>

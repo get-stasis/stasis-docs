@@ -1,0 +1,144 @@
+---
+title: SSH Keys
+description: Use SSH keys to authenticate with Stasis
+icon: Key
+---
+
+# SSH Keys
+
+SSH keys let you authenticate with Stasis without entering a password each time. This is the recommended way to use git over SSH.
+
+## How SSH Authentication Works
+
+1. You generate a pair of cryptographic keys (public and private)
+2. You add the public key to Stasis
+3. When you connect via SSH, Stasis verifies your private key matches
+
+Your private key never leaves your computer. Stasis only stores the public key.
+
+## Generating an SSH Key
+
+If you don't already have an SSH key, create one:
+
+```bash
+ssh-keygen -t ed25519 -C "your-email@example.com"
+```
+
+This creates two files:
+- `~/.ssh/id_ed25519` — your private key (keep this secret)
+- `~/.ssh/id_ed25519.pub` — your public key (this goes in Stasis)
+
+When prompted for a passphrase, you can either enter one for extra security or leave it empty.
+
+## Adding Your Key to Stasis
+
+1. Copy your public key:
+   ```bash
+   cat ~/.ssh/id_ed25519.pub
+   ```
+   This outputs something like: `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... your-email@example.com`
+
+2. In Stasis, go to Settings → SSH Keys
+3. Click "Add SSH Key"
+4. Give it a name (like "Work Laptop" or "Personal MacBook")
+5. Paste the public key into the key field
+6. Click "Add Key"
+
+## Using SSH with Stasis
+
+Once your key is added, you can use SSH URLs for git operations:
+
+```bash
+# Clone a repository
+git clone ssh://localhost:2222/username/repo.git
+
+# Add SSH remote to an existing repository
+git remote set-url origin ssh://localhost:2222/username/repo.git
+
+# Push
+git push origin main
+```
+
+### SSH Config
+
+To avoid typing the full URL every time, add this to `~/.ssh/config`:
+
+```
+Host stasis
+    HostName localhost
+    Port 2222
+    User git
+    IdentityFile ~/.ssh/id_ed25519
+```
+
+Then you can use shorter URLs:
+
+```bash
+git clone stasis:username/repo.git
+```
+
+## Managing Your Keys
+
+### Viewing Your Keys
+
+Go to Settings → SSH Keys to see all your added keys. Each key shows:
+- The name you gave it
+- The key fingerprint
+- When it was added
+
+### Removing a Key
+
+1. Go to Settings → SSH Keys
+2. Find the key you want to remove
+3. Click "Remove"
+
+After removing a key, you can no longer use it to authenticate. You'll need to add a new key or use HTTPS with a token instead.
+
+## Troubleshooting
+
+### "Permission denied (publickey)"
+
+This means Stasis doesn't recognize your key. Check:
+
+1. Your key is added in Settings → SSH Keys
+2. You're using the right key file:
+   ```bash
+   ssh -v -p 2222 localhost
+   ```
+   Look for `Offering public key: /home/user/.ssh/id_ed25519`
+
+3. Your SSH agent has the key loaded:
+   ```bash
+   eval "$(ssh-agent -s)"
+   ssh-add ~/.ssh/id_ed25519
+   ```
+
+### "Connection refused"
+
+- Make sure the SSH server is running: `docker compose ps`
+- Check the port is correct (default is 2222)
+- Check your firewall allows connections on that port
+
+### Wrong Key Being Used
+
+If you have multiple SSH keys, specify which one to use:
+
+```bash
+ssh -i ~/.ssh/id_ed25519 -p 2222 localhost
+```
+
+Or configure it permanently in `~/.ssh/config`.
+
+## Security Best Practices
+
+- **Use Ed25519 keys** — they're more secure and faster than RSA
+- **Use a passphrase** — adds an extra layer of protection
+- **One key per device** — so you can revoke access for a lost device
+- **Remove old keys** — if you no longer use a device, remove its key
+
+## Next Steps
+
+<Cards>
+  <Card title="Tokens" href="/docs/stasis/user-guide/tokens" description="Manage API tokens for scripts and CI/CD" />
+  <Card title="Authentication" href="/docs/stasis/user-guide/authentication" description="Back to authentication overview" />
+</Cards>

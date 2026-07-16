@@ -1,0 +1,44 @@
+---
+title: Introduction
+description: Distributed CI/CD runner for Stasis
+icon: Play
+---
+
+# Stasis CI
+
+A distributed CI/CD runner system built with Rust, designed to execute CI jobs in isolated Docker containers. Integrates with Stasis Git server.
+
+## Features
+
+<Cards>
+  <Card title="HTTP API" description="RESTful API for job submission and management" />
+  <Card title="Docker Isolation" description="Each job runs in an isolated Docker container" />
+  <Card title="Git Integration" description="Secure repository cloning with authentication" />
+  <Card title="Real-time Logging" description="Stream logs to Git Server in real-time" />
+  <Card title="Artifact Management" description="Collect, compress, and store build artifacts" />
+  <Card title="Job Replay/Retry" description="Re-run jobs with same or modified configuration" />
+</Cards>
+
+## Quick Start
+
+```bash
+# Navigate to CI runner directory
+cd stasis-ci
+
+# Setup environment
+cp .env.example .env
+
+# Start development environment
+make dev-up
+
+# View logs
+make dev-logs
+```
+
+## Documentation Sections
+
+<Cards>
+  <Card title="Getting Started" href="/docs/ci/getting-started/installation" description="Install and configure CI Runner" />
+  <Card title="Runner Guide" href="/docs/ci/runner-guide/configuration" description="Configure your CI runner" />
+  <Card title="API Reference" href="/docs/ci/api-reference" description="Explore the CI API" />
+</Cards>

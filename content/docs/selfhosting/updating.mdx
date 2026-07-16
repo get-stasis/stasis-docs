@@ -1,0 +1,110 @@
+---
+title: Updating
+description: Update Stasis to a new version
+icon: RefreshCw
+---
+
+# Updating
+
+This page explains how to update Stasis to a new version.
+
+## Before You Update
+
+1. **Back up your data** — see [Backup](/docs/selfhosting/backup)
+2. **Check the release notes** — look for breaking changes
+3. **Test in a staging environment** if possible
+
+## Updating with Docker Compose
+
+### 1. Pull the latest changes
+
+```bash
+cd stasis
+git pull origin main
+```
+
+### 2. Rebuild the images
+
+```bash
+docker compose build
+```
+
+### 3. Restart the services
+
+```bash
+docker compose up -d
+```
+
+### 4. Verify
+
+```bash
+# Check all services are running
+docker compose ps
+
+# Check the health endpoint
+curl http://localhost/api/v1/health
+
+# Check the web interface
+curl -o /dev/null -s -w "%{http_code}" http://localhost
+```
+
+## Database Migrations
+
+Stasis runs database migrations automatically on startup. You don't need to run them manually.
+
+If a migration fails, check the API logs:
+
+```bash
+docker compose logs api | grep -i migration
+```
+
+## Rolling Back
+
+If something goes wrong after an update:
+
+### 1. Stop the services
+
+```bash
+docker compose down
+```
+
+### 2. Restore from backup
+
+See [Backup](/docs/selfhosting/backup) for restore instructions.
+
+### 3. Check out the previous version
+
+```bash
+git checkout v1.x.x  # replace with the version you want
+```
+
+### 4. Rebuild and start
+
+```bash
+docker compose build
+docker compose up -d
+```
+
+## Updating the CI Runner
+
+The CI runner is updated separately:
+
+```bash
+cd stasis-ci
+git pull origin main
+docker compose build
+docker compose up -d
+```
+
+## Checking Your Version
+
+```bash
+curl http://localhost/api/v1/health | jq .version
+```
+
+## Next Steps
+
+<Cards>
+  <Card title="Backup" href="/docs/selfhosting/backup" description="Back up your Stasis instance" />
+  <Card title="Troubleshooting" href="/docs/selfhosting/troubleshooting" description="Common issues and solutions" />
+</Cards>

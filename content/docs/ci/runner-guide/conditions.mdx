@@ -1,0 +1,111 @@
+---
+title: Conditions
+description: Run steps conditionally
+icon: Funnel
+---
+
+# Conditions
+
+Conditions let you control when steps run. You can skip steps based on the branch, the result of previous steps, or custom expressions.
+
+## Basic Conditions
+
+### `if` — Run Only When True
+
+```yaml
+steps:
+  - name: Deploy
+    if: github.ref == 'refs/heads/main'
+    run: ./deploy.sh
+```
+
+This step only runs on the `main` branch.
+
+### `when` — Run Based on Previous Steps
+
+```yaml
+steps:
+  - name: Build
+    run: make build
+
+  - name: Notify on failure
+    when: on_failure
+    run: echo "Build failed!"
+```
+
+| Value | Description |
+|-------|-------------|
+| `always` | Run regardless of previous steps |
+| `on_success` | Run only if all previous steps succeeded (default) |
+| `on_failure` | Run only if a previous step failed |
+
+## Examples
+
+### Deploy Only on Main
+
+```yaml
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: make build
+
+      - name: Deploy
+        if: github.ref == 'refs/heads/main'
+        run: ./deploy.sh
+```
+
+### Run Cleanup Always
+
+```yaml
+steps:
+  - name: Run tests
+    run: npm test
+
+  - name: Cleanup
+    when: always
+    run: rm -rf /tmp/test-data
+```
+
+### Skip on Pull Requests
+
+```yaml
+steps:
+  - name: Publish
+    if: github.event_name == 'push'
+    run: npm publish
+```
+
+### Multiple Conditions
+
+```yaml
+steps:
+  - name: Deploy to production
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    run: ./deploy-production.sh
+```
+
+## Environment Variables in Conditions
+
+You can use environment variables in conditions:
+
+```yaml
+steps:
+  - name: Set environment
+    run: echo "DEPLOY=true" >> $GITHUB_ENV
+
+  - name: Deploy
+    if: env.DEPLOY == 'true'
+    run: ./deploy.sh
+```
+
+## Next Steps
+
+<Cards>
+  <Card title="runner.yaml" href="/docs/ci/runner-guide/runner-yaml" description="Pipeline configuration reference" />
+  <Card title="Artifacts" href="/docs/ci/runner-guide/artifacts" description="Store build artifacts" />
+  <Card title="Configuration" href="/docs/ci/runner-guide/configuration" description="Configure the CI runner" />
+</Cards>

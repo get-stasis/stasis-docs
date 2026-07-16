@@ -1,0 +1,86 @@
+---
+title: Docker Deployment
+description: Deploy Stasis with Docker Compose
+icon: Container
+---
+
+# Docker Deployment
+
+Docker Compose is the recommended way to deploy Stasis.
+
+## Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/get-stasis/stasis.git
+cd stasis
+
+# Copy environment file
+cp configs/.env.example .env
+
+# Edit .env with your settings
+vim .env
+
+# Start all services
+docker compose up -d
+```
+
+## Services
+
+| Service | Description | Port |
+|---------|-------------|------|
+| nginx | Reverse proxy | 80, 443 |
+| api | Go API server | 8080 (internal) |
+| web | Next.js frontend | 3000 (internal) |
+| postgres | PostgreSQL database | 5432 (internal) |
+
+## Environment Variables
+
+Create a `.env` file with the following:
+
+```bash
+# Required
+STASIS_DB_PASSWORD=your-secure-password
+STASIS_OIDC_JWT_SECRET=your-jwt-secret-minimum-32-characters
+
+# Optional
+STASIS_OIDC_ENABLED=true
+STASIS_OIDC_ISSUER_URL=https://your-oidc-provider.com
+STASIS_OIDC_CLIENT_ID=your-client-id
+STASIS_OIDC_CLIENT_SECRET=your-client-secret
+```
+
+## Volumes
+
+| Volume | Description |
+|--------|-------------|
+| postgres_data | PostgreSQL data |
+| repo_data | Git repositories |
+| nginx_certs | SSL certificates |
+
+## Health Checks
+
+All services include health checks:
+
+```bash
+# Check service status
+docker compose ps
+
+# View logs
+docker compose logs -f api
+```
+
+## Production Considerations
+
+1. **Use HTTPS**: Configure SSL certificates
+2. **Set strong passwords**: Use secure database passwords
+3. **Enable OIDC**: Configure authentication
+4. **Regular backups**: Backup PostgreSQL and repository data
+5. **Monitor services**: Set up monitoring and alerting
+
+## Next Steps
+
+<Cards>
+  <Card title="NGINX Configuration" href="/docs/selfhosting/nginx" description="Configure reverse proxy" />
+  <Card title="SSL/TLS" href="/docs/selfhosting/ssl" description="Secure your deployment" />
+</Cards>

@@ -1,0 +1,146 @@
+---
+title: Configuration
+description: Configure the CI runner
+icon: Settings
+---
+
+# Configuration
+
+The CI runner is configured through a `config.yaml` file and environment variables.
+
+## Configuration File
+
+The default configuration file is `config.yaml` in the CI runner directory:
+
+```yaml
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+executor:
+  max_concurrent_jobs: 5
+  workspace_root: "/app/workspaces"
+  docker:
+    socket: "/var/run/docker.sock"
+  resources:
+    cpu_limit: "2.0"
+    memory_limit: "2g"
+
+store:
+  store_type: "memory"  # or "redis"
+  redis_url: "redis://redis:6379"
+
+artifacts:
+  storage_type: "local"  # or "s3"
+  local_path: "/app/artifacts"
+
+auth:
+  enabled: true
+  api_keys:
+    - "your-api-key"
+```
+
+## Server Configuration
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `server.host` | Bind address | `0.0.0.0` |
+| `server.port` | HTTP port | `8080` |
+
+## Executor Configuration
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `executor.max_concurrent_jobs` | Maximum parallel jobs | `5` |
+| `executor.workspace_root` | Where repos are cloned | `/app/workspaces` |
+| `executor.docker.socket` | Docker socket path | `/var/run/docker.sock` |
+| `executor.resources.cpu_limit` | CPU limit per job | `2.0` |
+| `executor.resources.memory_limit` | Memory limit per job | `2g` |
+
+## Store Configuration
+
+The store keeps track of job state and history.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `store.store_type` | `memory` or `redis` | `memory` |
+| `store.redis_url` | Redis connection URL | `redis://redis:6379` |
+| `store.max_history` | Max jobs to remember | `100` |
+
+<Callout type="info">
+  Use `memory` for development. For production, use `redis` so job history persists across restarts.
+</Callout>
+
+## Artifact Configuration
+
+Build artifacts (compiled binaries, test reports, etc.) can be stored locally or in S3.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `artifacts.storage_type` | `local` or `s3` | `local` |
+| `artifacts.local_path` | Where to store artifacts | `/app/artifacts` |
+| `artifacts.s3.endpoint` | S3 endpoint URL | - |
+| `artifacts.s3.bucket` | S3 bucket name | - |
+| `artifacts.s3.region` | S3 region | - |
+| `artifacts.s3.access_key` | S3 access key | - |
+| `artifacts.s3.secret_key` | S3 secret key | - |
+
+## Authentication
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `auth.enabled` | Require API key | `true` |
+| `auth.api_keys` | List of valid API keys | `[]` |
+
+## Environment Variables
+
+You can override configuration with environment variables:
+
+```bash
+CI_RUNNER_PORT=8080
+CI_RUNNER_HOST=0.0.0.0
+REDIS_URL=redis://redis:6379
+RUST_LOG=info
+```
+
+## Docker Compose
+
+The recommended Docker Compose setup:
+
+```yaml
+services:
+  ci-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ci-workspaces:/app/workspaces
+      - ci-cache:/app/cache
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - RUST_LOG=info
+    networks:
+      - ci-network
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+
+volumes:
+  ci-workspaces:
+  ci-cache:
+  redis_data:
+
+networks:
+  ci-network:
+    driver: bridge
+```
+
+## Next Steps
+
+<Cards>
+  <Card title="runner.yaml" href="/docs/ci/runner-guide/runner-yaml" description="Pipeline configuration reference" />
+  <Card title="Artifacts" href="/docs/ci/runner-guide/artifacts" description="Store build artifacts" />
+  <Card title="Conditions" href="/docs/ci/runner-guide/conditions" description="Conditional step execution" />
+</Cards>

@@ -1,0 +1,45 @@
+---
+title: Introduction
+description: A self-hosted Git server with a GitHub-inspired interface
+icon: Rocket
+---
+
+# Stasis
+
+A self-hosted Git server implementation with SSH and HTTP protocol support, built with Go. Features a GitHub-inspired web interface with user profiles, contribution graphs, and social links.
+
+## Features
+
+<Cards>
+  <Card title="Git Protocol" description="Full SSH and Smart HTTP support for clone, push, pull" />
+  <Card title="Web Interface" description="GitHub-inspired UI with Dracula theme" />
+  <Card title="User Profiles" description="Bio, company, location, website, avatar, social links" />
+  <Card title="Social Links" description="Auto-detected icons for 11+ platforms including Mastodon" />
+  <Card title="Contribution Graph" description="GitHub-style heatmap with year selector" />
+  <Card title="CI/CD" description="Pluggable CI runner for automated builds" />
+</Cards>
+
+## Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/get-stasis/stasis.git
+cd stasis
+
+# Copy environment file
+cp configs/.env.example .env
+
+# Edit .env with your settings
+vim .env
+
+# Start all services
+docker compose up -d
+```
+
+## Documentation Sections
+
+<Cards>
+  <Card title="Getting Started" href="/docs/stasis/getting-started/installation" description="Install and configure Stasis" />
+  <Card title="User Guide" href="/docs/stasis/user-guide/authentication" description="Learn how to use Stasis" />
+  <Card title="API Reference" href="/docs/stasis/api-reference" description="Explore the REST API" />
+</Cards>

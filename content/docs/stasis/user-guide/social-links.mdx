@@ -1,0 +1,69 @@
+---
+title: Social Links
+description: Add social media links to your profile
+icon: Link
+---
+
+# Social Links
+
+You can add up to 4 social links to your profile. These appear on your profile page with icons that are automatically detected from the URL.
+
+## Adding a Social Link
+
+1. Go to Settings → General
+2. Scroll to "Social Links"
+3. Enter the URL (e.g., `https://github.com/yourusername`)
+4. Optionally customize the display name
+5. Click "Add Link"
+
+## Supported Platforms
+
+Stasis automatically detects these platforms and shows the right icon:
+
+| Platform | URL Pattern |
+|----------|-------------|
+| GitHub | `github.com/username` |
+| Twitter / X | `twitter.com/username` or `x.com/username` |
+| LinkedIn | `linkedin.com/in/username` |
+| YouTube | `youtube.com/@username` |
+| Twitch | `twitch.tv/username` |
+| Discord | `discord.gg/invite` or `discord.com/users/id` |
+| Mastodon | `@user@instance` or `instance/@user` |
+| Stack Overflow | `stackoverflow.com/users/id` |
+| DEV | `dev.to/username` |
+| Medium | `medium.com/@username` |
+| Hashnode | `hashnode.dev/@username` |
+
+For any other URL, a generic link icon is shown.
+
+## Mastodon Usernames
+
+Stasis supports Mastodon's `@username@instance` format. This is the standard way to share your Mastodon handle.
+
+**Examples:**
+- `@stasis@fosstodon.org`
+- `@john@example.com`
+
+When you enter a Mastodon username:
+1. Stasis recognizes the `@user@instance` format
+2. It shows the Mastodon icon
+3. It links to `https://instance/@user` when clicked
+
+You can also enter the full URL instead: `https://fosstodon.org/@stasis`
+
+## Removing a Social Link
+
+1. Go to Settings → General
+2. Find the link under "Social Links"
+3. Click "Remove"
+
+## Display Order
+
+Links appear on your profile in the order you add them. To reorder, remove the existing links and re-add them in your preferred order.
+
+## Next Steps
+
+<Cards>
+  <Card title="Profiles" href="/docs/stasis/user-guide/profiles" description="Customize your profile" />
+  <Card title="SSH Keys" href="/docs/stasis/user-guide/ssh-keys" description="Set up SSH authentication" />
+</Cards>

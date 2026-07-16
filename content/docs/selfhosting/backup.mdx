@@ -1,0 +1,144 @@
+---
+title: Backup
+description: Back up and restore your Stasis instance
+icon: HardDrive
+---
+
+# Backup
+
+Regular backups protect you from data loss. This page explains what to back up and how.
+
+## What to Back Up
+
+Stasis stores data in two places:
+
+1. **PostgreSQL database** — user accounts, repository metadata, SSH keys, tokens
+2. **Repository files** — the actual git repositories on disk
+
+You need to back up both.
+
+## Backing Up PostgreSQL
+
+### Using pg_dump
+
+```bash
+# Full backup
+docker compose exec postgres pg_dump -U stasis stasis > backup-$(date +%Y%m%d).sql
+
+# Compressed backup
+docker compose exec postgres pg_dump -U stasis stasis | gzip > backup-$(date +%Y%m%d).sql.gz
+```
+
+### Automated Daily Backup
+
+Create a backup script at `scripts/backup-db.sh`:
+
+```bash
+#!/bin/bash
+BACKUP_DIR="/path/to/backups"
+DATE=$(date +%Y%m%d_%H%M%S)
+
+mkdir -p $BACKUP_DIR
+
+docker compose exec -T postgres pg_dump -U stasis stasis | gzip > "$BACKUP_DIR/db_$DATE.sql.gz"
+
+# Keep only last 30 days
+find $BACKUP_DIR -name "db_*.sql.gz" -mtime +30 -delete
+```
+
+Make it executable and add to cron:
+
+```bash
+chmod +x scripts/backup-db.sh
+crontab -e
+# Add: 0 2 * * * /path/to/stasis/scripts/backup-db.sh
+```
+
+## Backing Up Repositories
+
+The git repositories are stored in a Docker volume. Back them up:
+
+```bash
+# Find the volume path
+docker volume inspect stasis_repo_data
+
+# Copy the volume data
+docker run --rm -v stasis_repo_data:/data -v $(pwd)/backups:/backup alpine tar czf /backup/repos-$(date +%Y%m%d).tar.gz /data
+```
+
+Or if you're using a bind mount:
+
+```bash
+# Back up the repos directory
+tar czf repos-$(date +%Y%m%d).tar.gz /path/to/repos
+```
+
+## Automated Backup Script
+
+Create `scripts/backup.sh`:
+
+```bash
+#!/bin/bash
+set -e
+
+BACKUP_DIR="/path/to/backups"
+DATE=$(date +%Y%m%d_%H%M%S)
+
+mkdir -p $BACKUP_DIR
+
+echo "Backing up database..."
+docker compose exec -T postgres pg_dump -U stasis stasis | gzip > "$BACKUP_DIR/db_$DATE.sql.gz"
+
+echo "Backing up repositories..."
+docker run --rm -v stasis_repo_data:/data -v $BACKUP_DIR:/backup alpine tar czf /backup/repos_$DATE.tar.gz /data
+
+echo "Backup complete: $BACKUP_DIR"
+ls -lh $BACKUP_DIR/*_$DATE.*
+
+# Clean up old backups (keep 30 days)
+find $BACKUP_DIR -name "*.gz" -mtime +30 -delete
+```
+
+## Restoring from Backup
+
+### Restore Database
+
+```bash
+# Stop the API server
+docker compose stop api
+
+# Restore the database
+gunzip < backup-20240101.sql.gz | docker compose exec -T postgres psql -U stasis stasis
+
+# Start the API server
+docker compose start api
+```
+
+### Restore Repositories
+
+```bash
+# Stop all services
+docker compose down
+
+# Restore the volume
+docker run --rm -v stasis_repo_data:/data -v $(pwd)/backups:/backup alpine sh -c "cd /data && tar xzf /backup/repos_20240101.tar.gz --strip-components=1"
+
+# Start services
+docker compose up -d
+```
+
+## Testing Backups
+
+Regularly test your backups by restoring them to a test environment:
+
+1. Set up a test environment with Docker Compose
+2. Restore the backup
+3. Verify you can log in and access repositories
+4. Verify git operations work
+
+## Next Steps
+
+<Cards>
+  <Card title="Monitoring" href="/docs/selfhosting/monitoring" description="Monitor your Stasis instance" />
+  <Card title="Updating" href="/docs/selfhosting/updating" description="Update Stasis to a new version" />
+</Cards>

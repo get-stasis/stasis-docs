@@ -1,37 +1,57 @@
-import { docs } from 'collections/server';
+import { stasis as stasisCollection, ci as ciCollection, selfhosting as selfhostingCollection } from 'collections/server';
 import { loader } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
-import { docsContentRoute, docsImageRoute, docsRoute } from './shared';
+import { openapiPlugin } from 'fumadocs-openapi/server';
+import { docsRoute } from './shared';
 
-// See https://fumadocs.dev/docs/headless/source-api for more info
-export const source = loader({
-  baseUrl: docsRoute,
-  source: docs.toFumadocsSource(),
+export const stasisDocs = loader(
+  {
+    docs: stasisCollection.toFumadocsSource(),
+  },
+  {
+    baseUrl: `${docsRoute}/stasis`,
+    plugins: [lucideIconsPlugin(), openapiPlugin()],
+  },
+);
+
+export const ciDocs = loader(
+  {
+    docs: ciCollection.toFumadocsSource(),
+  },
+  {
+    baseUrl: `${docsRoute}/ci`,
+    plugins: [lucideIconsPlugin(), openapiPlugin()],
+  },
+);
+
+export const selfhostingDocs = loader({
+  source: selfhostingCollection.toFumadocsSource(),
+  baseUrl: `${docsRoute}/selfhosting`,
   plugins: [lucideIconsPlugin()],
 });
 
-export function getPageImage(page: (typeof source)['$inferPage']) {
+export const source = stasisDocs;
+
+export function getPageImage(page: any) {
   const segments = [...page.slugs, 'image.png'];
-
   return {
     segments,
-    url: `${docsImageRoute}/${segments.join('/')}`,
+    url: `/og/docs/${segments.join('/')}`,
   };
 }
 
-export function getPageMarkdownUrl(page: (typeof source)['$inferPage']) {
+export function getPageMarkdownUrl(page: any) {
   const segments = [...page.slugs, 'content.md'];
-
   return {
     segments,
-    url: `${docsContentRoute}/${segments.join('/')}`,
+    url: `/llms.mdx/docs/${segments.join('/')}`,
   };
 }
 
-export async function getLLMText(page: (typeof source)['$inferPage']) {
+export async function getLLMText(page: any) {
+  if (page.type === 'openapi') {
+    return `# ${page.data.title}\n\nOpenAPI endpoint: ${page.data.method} ${page.data.path}\n\nDescription: ${page.data.description}`;
+  }
   const processed = await page.data.getText('processed');
-
-  return `# ${page.data.title} (${page.url})
-
-${processed}`;
+  return `# ${page.data.title} (${page.url})\n\n${processed}`;
 }

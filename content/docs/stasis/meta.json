@@ -1,0 +1,25 @@
+{
+  "title": "Stasis",
+  "description": "Self-hosted Git Server",
+  "icon": "GitBranch",
+  "pages": [
+    "index",
+    "---Getting Started---",
+    "getting-started/installation",
+    "getting-started/quick-start",
+    "getting-started/configuration",
+    "---User Guide---",
+    "user-guide/authentication",
+    "user-guide/repositories",
+    "user-guide/profiles",
+    "user-guide/social-links",
+    "user-guide/ssh-keys",
+    "user-guide/tokens",
+    "---Developer Guide---",
+    "developer-guide/architecture",
+    "developer-guide/contributing",
+    "developer-guide/testing",
+    "---API Reference---",
+    "...api"
+  ]
+}

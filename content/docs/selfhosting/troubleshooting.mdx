@@ -1,0 +1,154 @@
+---
+title: Troubleshooting
+description: Common issues and solutions
+icon: CircleHelp
+---
+
+# Troubleshooting
+
+This page covers common issues and how to fix them.
+
+## Stasis Won't Start
+
+### Check service status
+
+```bash
+docker compose ps
+```
+
+All services should show "Up" or "(healthy)".
+
+### Check logs
+
+```bash
+docker compose logs api
+docker compose logs web
+docker compose logs postgres
+```
+
+### Common causes
+
+- **Database not ready**: PostgreSQL takes a few seconds to start. Wait and try again.
+- **Wrong password**: Check `STASIS_DB_PASSWORD` in your `.env` file.
+- **Port conflict**: Another service is using port 80, 443, or 5432.
+
+## Can't Sign In
+
+### "OIDC not configured"
+
+Make sure these are set in your `.env` file:
+- `STASIS_OIDC_ENABLED=true`
+- `STASIS_OIDC_ISSUER_URL`
+- `STASIS_OIDC_CLIENT_ID`
+- `STASIS_OIDC_CLIENT_SECRET`
+- `STASIS_OIDC_JWT_SECRET`
+
+### Redirect loop
+
+The OIDC callback URL must match exactly. Check:
+- `http` vs `https`
+- `localhost` vs your domain
+- Port number (usually no port for HTTPS)
+
+### "Invalid token"
+
+`STASIS_OIDC_JWT_SECRET` must be at least 32 characters.
+
+## Git Operations Fail
+
+### "Authentication failed" over HTTPS
+
+- Check your token is valid: Settings → Tokens
+- Make sure you include your username: `https://username:token@...`
+
+### "Permission denied" over SSH
+
+- Check your SSH key is added: Settings → SSH Keys
+- Test the connection: `ssh -v -p 2222 localhost`
+- Make sure the SSH agent has your key: `ssh-add ~/.ssh/id_ed25519`
+
+### "Connection refused"
+
+- Check the SSH server is running: `docker compose ps`
+- Check the port (default 2222)
+- Check your firewall
+
+### Push fails with "pre-receive hook declined"
+
+- The repository might be at its size limit
+- Check the API logs for details
+
+## Web Interface Issues
+
+### Page shows "502 Bad Gateway"
+
+NGINX can't reach the API or web server:
+```bash
+docker compose ps
+docker compose logs nginx
+```
+
+### Page is blank or won't load
+
+- Check the web server logs: `docker compose logs web`
+- Clear your browser cache
+- Try incognito mode
+
+### Can't see repositories
+
+- Check you're signed in
+- Check the repository isn't private and you're not the owner
+
+## Database Issues
+
+### "Too many connections"
+
+```bash
+docker compose exec postgres psql -U stasis -c "SELECT count(*) FROM pg_stat_activity;"
+```
+
+If the count is high, restart PostgreSQL:
+```bash
+docker compose restart postgres
+```
+
+### Database is slow
+
+Check for long-running queries:
+```bash
+docker compose exec postgres psql -U stasis -c "SELECT pid, query, state, query_start FROM pg_stat_activity WHERE state = 'active' ORDER BY query_start;"
+```
+
+## Performance Issues
+
+### Slow git operations
+
+- Check disk space: `df -h`
+- Check disk I/O: `iostat -x 1`
+- Consider using SSDs for the repository volume
+
+### Slow web interface
+
+- Check API server logs for slow queries
+- Check database connection pool
+- Check network latency between services
+
+## Getting More Help
+
+If your issue isn't covered here:
+
+1. Check the [GitHub Issues](https://github.com/get-stasis/stasis/issues)
+2. Search for your error message
+3. Open a new issue with:
+   - What you were trying to do
+   - What happened instead
+   - Logs from `docker compose logs`
+   - Your environment (OS, Docker version)
+
+## Next Steps
+
+<Cards>
+  <Card title="Docker" href="/docs/selfhosting/docker" description="Docker deployment overview" />
+  <Card title="Backup" href="/docs/selfhosting/backup" description="Back up your Stasis instance" />
+  <Card title="Monitoring" href="/docs/selfhosting/monitoring" description="Monitor your instance" />
+</Cards>

@@ -1,0 +1,130 @@
+---
+title: Architecture
+description: How Stasis is built
+icon: Layers
+---
+
+# Architecture
+
+This page explains how Stasis is structured internally. You don't need to understand this to use Stasis, but it's helpful if you want to contribute or troubleshoot.
+
+## High-Level Overview
+
+Stasis has four main components:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                        NGINX                            │
+│                   (Reverse Proxy)                       │
+└─────────────────┬───────────────────┬───────────────────┘
+                  │                   │
+                  ▼                   ▼
+        ┌─────────────────┐  ┌─────────────────┐
+        │   API Server    │  │   Web Frontend  │
+        │      (Go)       │  │    (Next.js)    │
+        └────────┬────────┘  └─────────────────┘
+                 │
+                 ▼
+        ┌─────────────────┐
+        │   PostgreSQL    │
+        │   (Database)    │
+        └─────────────────┘
+```
+
+### NGINX
+
+The entry point. It routes requests:
+- `/api/*` → API Server
+- `/` → Web Frontend
+- Git Smart HTTP requests → API Server
+
+### API Server (Go)
+
+The backend. Handles:
+- [Authentication](/docs/stasis/user-guide/authentication) (OIDC)
+- Repository management
+- Git protocol (SSH and HTTP)
+- [User profiles](/docs/stasis/user-guide/profiles)
+- [Tokens](/docs/stasis/user-guide/tokens) and [SSH keys](/docs/stasis/user-guide/ssh-keys)
+
+### Web Frontend (Next.js)
+
+The UI you see in your browser. It communicates with the API server to display repositories, commits, and settings.
+
+### PostgreSQL
+
+Stores all persistent data:
+- User accounts and profiles
+- Repository metadata
+- SSH keys and tokens
+- CI/CD job records
+
+## Directory Structure
+
+```
+stasis/
+├── cmd/
+│   └── server/           # Main entry point
+├── internal/
+│   ├── application/      # Business logic
+│   │   ├── dto/          # Data transfer objects
+│   │   └── service/      # Service implementations
+│   ├── config/           # Configuration loading
+│   ├── domain/           # Domain models
+│   │   ├── models/       # Data structures
+│   │   └── repository/   # Repository interfaces
+│   ├── infrastructure/   # External integrations
+│   │   ├── git/          # Git operations
+│   │   └── repository/   # Database implementations
+│   └── transport/        # HTTP and SSH handlers
+│       ├── http/         # REST API handlers
+│       └── ssh/          # SSH server
+├── web/                  # Next.js frontend
+│   ├── app/              # Pages and routes
+│   ├── components/       # React components
+│   └── lib/              # Utilities and API client
+├── configs/              # Configuration files
+└── deploy/               # Deployment configs (nginx, etc.)
+```
+
+## How Git Operations Work
+
+### HTTP (Smart HTTP Protocol)
+
+When you `git clone http://localhost/username/repo.git`:
+
+1. NGINX receives the request
+2. NGINX forwards it to the API server
+3. The API server authenticates the request (token or session)
+4. The API server reads the repository from disk
+5. The API server returns the git data
+6. Your local git client processes the data
+
+### SSH
+
+When you `git clone ssh://localhost:2222/username/repo.git`:
+
+1. The SSH server receives the connection
+2. It verifies your SSH key against stored keys
+3. It executes the git command
+4. It reads/writes the repository on disk
+
+## How Authentication Works
+
+See [Authentication](/docs/stasis/user-guide/authentication) for user-facing details. Internally:
+
+1. OIDC tokens are verified against the identity provider
+2. Session tokens are stored in cookies
+3. API tokens are verified against the database
+4. SSH keys are verified against stored public keys
+
+## Contributing
+
+Want to contribute to Stasis? See [Contributing](/docs/stasis/developer-guide/contributing) for how to set up your development environment and submit changes.
+
+## Next Steps
+
+<Cards>
+  <Card title="Contributing" href="/docs/stasis/developer-guide/contributing" description="How to contribute to Stasis" />
+  <Card title="Testing" href="/docs/stasis/developer-guide/testing" description="How to run and write tests" />
+</Cards>

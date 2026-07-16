@@ -1,0 +1,101 @@
+---
+title: Quick Start
+description: Run your first CI job
+icon: Zap
+---
+
+# Quick Start
+
+This guide walks you through running your first CI job with Stasis CI. By the end, you'll have a pipeline that builds and tests your code automatically when you push.
+
+## Prerequisites
+
+- A running [Stasis instance](/docs/stasis/getting-started/installation)
+- Docker and Docker Compose
+- A repository on Stasis
+
+## 1. Start the CI Runner
+
+```bash
+cd stasis-ci
+cp .env.example .env
+docker compose up -d
+```
+
+Verify it's running:
+
+```bash
+docker compose logs -f ci-runner
+```
+
+You should see: `CI runner started`
+
+## 2. Create a Pipeline Configuration
+
+In your repository, create a file called `.stasis-ci.yml`:
+
+```yaml
+name: Build and Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+```
+
+## 3. Push and Watch
+
+```bash
+git add .stasis-ci.yml
+git commit -m "Add CI pipeline"
+git push origin main
+```
+
+Go to your repository in Stasis and click the **CI** tab. You should see your job running.
+
+## 4. View Logs
+
+Click on the job to see real-time logs as each step executes.
+
+## How It Works
+
+1. You push code to Stasis
+2. Stasis detects the `.stasis-ci.yml` file
+3. The CI runner picks up the job
+4. The runner creates a Docker container
+5. Your code is checked out inside the container
+6. Each step runs in order
+7. Results and logs are streamed back to Stasis
+
+## Configuration Reference
+
+See [runner.yaml](/docs/ci/runner-guide/runner-yaml) for the full configuration format.
+
+## Next Steps
+
+<Cards>
+  <Card title="Configuration" href="/docs/ci/runner-guide/configuration" description="Configure the CI runner" />
+  <Card title="runner.yaml" href="/docs/ci/runner-guide/runner-yaml" description="Full pipeline configuration reference" />
+  <Card title="Artifacts" href="/docs/ci/runner-guide/artifacts" description="Store build artifacts" />
+</Cards>
