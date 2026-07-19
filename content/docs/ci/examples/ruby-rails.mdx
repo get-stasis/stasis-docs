@@ -1,0 +1,219 @@
+---
+title: Ruby Rails
+description: Ruby on Rails application with tests and deployment
+icon: Gem
+---
+
+# Ruby on Rails Application
+
+CI/CD pipeline for Rails applications with testing, linting, and deployment.
+
+## Overview
+
+This pipeline handles Rails projects with:
+- Dependency installation (Bundler)
+- Code linting (RuboCop)
+- Unit and integration tests (RSpec)
+- Database migrations
+- Asset compilation
+- Deployment
+
+## Use Case
+
+- Rails web applications
+- Rails API applications
+- Rails with Sidekiq
+- Rails with ActionCable
+
+## Prerequisites
+
+- Ruby 3.0+ project
+- `Gemfile` configured
+- RSpec configured for testing
+
+## Configuration
+
+```yaml
+# runner.yaml
+image:
+  name: "ruby"
+  tag: "3.3-slim"
+  pull_policy: "IfNotPresent"
+
+on:
+  push:
+    - "main"
+    - "develop"
+  pull_request:
+    - "main"
+
+global_env:
+  RAILS_ENV: "test"
+  BUNDLE_JOBS: "4"
+  BUNDLE_RETRY: "3"
+
+timeout: 1200  # 20 minutes
+
+steps:
+  setup:
+    type: "pre"
+    scripts:
+      - ruby --version
+      - gem --version
+      - bundle --version
+      - |
+        echo "Installing dependencies..."
+        bundle install --jobs=4 --retry=3 --path vendor/bundle
+
+  lint:
+    type: "exec"
+    scripts:
+      - |
+        echo "Running RuboCop..."
+        bundle exec rubocop --parallel
+      - |
+        echo "Running Brakeman..."
+        bundle exec brakeman --no-pager
+    continue_on_error: false
+
+  test:
+    type: "exec"
+    scripts:
+      - |
+        echo "Setting up test database..."
+        bundle exec rails db:create db:schema:load
+      - |
+        echo "Running tests..."
+        bundle exec rspec \
+          --format documentation \
+          --format RspecJunitFormatter \
+          --out coverage/junit.xml \
+          --format html \
+          --out coverage/report.html
+    envs:
+      RAILS_ENV: "test"
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test_db"
+    continue_on_error: false
+    timeout: 600
+
+  security_scan:
+    type: "exec"
+    scripts:
+      - |
+        echo "Running bundle audit..."
+        bundle exec bundle-audit check --update
+      - |
+        echo "Running Brakeman..."
+        bundle exec brakeman --no-pager --format json --output brakeman-report.json
+    continue_on_error: true
+    artifacts:
+      - "brakeman-report.json"
+
+  assets_precompile:
+    type: "exec"
+    scripts:
+      - |
+        echo "Precompiling assets..."
+        bundle exec rails assets:precompile
+      - |
+        echo "Asset size:"
+        du -sh public/assets/
+    envs:
+      RAILS_ENV: "production"
+    continue_on_error: false
+
+  build_artifacts:
+    type: "post"
+    scripts:
+      - |
+        echo "Build artifacts:"
+        ls -lh coverage/ || true
+        ls -lh public/assets/ || true
+    when: "always"
+    artifacts:
+      - "coverage/**/*"
+      - "brakeman-report.json"
+```
+
+## Step-by-Step Explanation
+
+### Step 1: Setup
+
+```yaml
+setup:
+  type: "pre"
+  scripts:
+    - bundle install --jobs=4 --retry=3 --path vendor/bundle
+```
+
+**What it does:**
+- Installs Ruby dependencies
+- Uses parallel jobs for faster installation
+- Caches gems in vendor/bundle
+
+### Step 2: Lint
+
+```yaml
+lint:
+  type: "exec"
+  scripts:
+    - bundle exec rubocop --parallel
+    - bundle exec brakeman --no-pager
+```
+
+**What it does:**
+- Runs RuboCop for code style
+- Runs Brakeman for security analysis
+
+### Step 3: Test
+
+```yaml
+test:
+  type: "exec"
+  scripts:
+    - bundle exec rails db:create db:schema:load
+    - bundle exec rspec --format documentation --format RspecJunitFormatter --out coverage/junit.xml
+```
+
+**What it does:**
+- Sets up test database
+- Runs RSpec tests
+- Generates JUnit XML report
+
+### Step 4: Security Scan
+
+```yaml
+security_scan:
+  type: "exec"
+  scripts:
+    - bundle exec bundle-audit check --update
+    - bundle exec brakeman --no-pager --format json --output brakeman-report.json
+```
+
+**What it does:**
+- Checks for vulnerable dependencies
+- Generates security report
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | PostgreSQL connection URL |
+| `RAILS_ENV` | No | Rails environment |
+| `SECRET_KEY_BASE` | For deploy | Rails secret key |
+
+## Artifacts
+
+| File | Description |
+|------|-------------|
+| `coverage/report.html` | Test coverage report |
+| `coverage/junit.xml` | JUnit test results |
+| `brakeman-report.json` | Security scan results |
+| `public/assets/` | Compiled assets |
+
+## Next Steps
+
+<Cards>
+  <Card title="Python Django" href="/docs/ci/examples/python-django" description="Similar Python framework" />
+  <Card title="Docker Multi-Arch" href="/docs/ci/examples/docker-multiarch" description="Containerize Rails app" />
+</Cards>

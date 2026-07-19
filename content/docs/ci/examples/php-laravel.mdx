@@ -1,0 +1,207 @@
+---
+title: PHP Laravel
+description: PHP Laravel application with tests and deployment
+icon: Code
+---
+
+# PHP Laravel Application
+
+CI/CD pipeline for Laravel applications with testing, linting, and deployment.
+
+## Overview
+
+This pipeline handles Laravel projects with:
+- Dependency installation (Composer)
+- Code linting (PHPStan, Pint)
+- Unit and feature tests (PHPUnit)
+- Database migrations
+- Asset compilation
+- Deployment
+
+## Use Case
+
+- Laravel web applications
+- Laravel API applications
+- Laravel with Livewire
+- Laravel with Inertia.js
+
+## Prerequisites
+
+- PHP 8.2+ project
+- `composer.json` configured
+- PHPUnit configured for testing
+
+## Configuration
+
+```yaml
+# runner.yaml
+image:
+  name: "php"
+  tag: "8.3-cli"
+  pull_policy: "IfNotPresent"
+
+on:
+  push:
+    - "main"
+    - "develop"
+  pull_request:
+    - "main"
+
+global_env:
+  APP_ENV: "testing"
+  DB_CONNECTION: "sqlite"
+  DB_DATABASE: ":memory:"
+
+timeout: 1200  # 20 minutes
+
+steps:
+  setup:
+    type: "pre"
+    scripts:
+      - php --version
+      - composer --version
+      - |
+        echo "Installing dependencies..."
+        composer install --no-interaction --prefer-dist --optimize-autoloader
+
+  lint:
+    type: "exec"
+    scripts:
+      - |
+        echo "Running PHPStan..."
+        vendor/bin/phpstan analyse --memory-limit=2G
+      - |
+        echo "Running Laravel Pint..."
+        vendor/bin/pint --test
+    continue_on_error: false
+
+  test:
+    type: "exec"
+    scripts:
+      - |
+        echo "Running tests..."
+        vendor/bin/phpunit \
+          --coverage-html coverage/html \
+          --coverage-clover coverage/coverage.xml \
+          --log-junit coverage/junit.xml
+    continue_on_error: false
+    timeout: 600
+
+  security_scan:
+    type: "exec"
+    scripts:
+      - |
+        echo "Running security audit..."
+        composer audit
+      - |
+        echo "Running Enlightn security checker..."
+        vendor/bin/security-checker security:check composer.lock
+    continue_on_error: true
+
+  build_assets:
+    type: "exec"
+    scripts:
+      - |
+        echo "Installing Node.js dependencies..."
+        npm ci
+      - |
+        echo "Building assets..."
+        npm run build
+      - |
+        echo "Asset size:"
+        du -sh public/build/
+    continue_on_error: false
+
+  artifacts:
+    type: "post"
+    scripts:
+      - |
+        echo "Build artifacts:"
+        ls -lh public/build/ || true
+        echo ""
+        echo "Test results:"
+        ls -lh coverage/ || true
+    when: "always"
+    artifacts:
+      - "coverage/**/*"
+      - "public/build/**/*"
+```
+
+## Step-by-Step Explanation
+
+### Step 1: Setup
+
+```yaml
+setup:
+  type: "pre"
+  scripts:
+    - composer install --no-interaction --prefer-dist --optimize-autoloader
+```
+
+**What it does:**
+- Installs PHP dependencies
+- Optimizes autoloader
+
+### Step 2: Lint
+
+```yaml
+lint:
+  type: "exec"
+  scripts:
+    - vendor/bin/phpstan analyse --memory-limit=2G
+    - vendor/bin/pint --test
+```
+
+**What it does:**
+- Runs PHPStan for static analysis
+- Runs Laravel Pint for code style
+
+### Step 3: Test
+
+```yaml
+test:
+  type: "exec"
+  scripts:
+    - vendor/bin/phpunit --coverage-html coverage/html --coverage-clover coverage/coverage.xml
+```
+
+**What it does:**
+- Runs PHPUnit tests
+- Generates coverage reports
+
+### Step 4: Security Scan
+
+```yaml
+security_scan:
+  type: "exec"
+  scripts:
+    - composer audit
+    - vendor/bin/security-checker security:check composer.lock
+```
+
+**What it does:**
+- Checks for vulnerable dependencies
+- Generates security report
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `APP_KEY` | For deploy | Laravel application key |
+| `DB_CONNECTION` | No | Database connection |
+| `DB_DATABASE` | No | Database name |
+
+## Artifacts
+
+| File | Description |
+|------|-------------|
+| `coverage/html/` | HTML coverage report |
+| `coverage/coverage.xml` | XML coverage report |
+| `public/build/` | Compiled assets |
+
+## Next Steps
+
+<Cards>
+  <Card title="Python Django" href="/docs/ci/examples/python-django" description="Similar Python framework" />
+  <Card title="Docker Multi-Arch" href="/docs/ci/examples/docker-multiarch" description="Containerize Laravel app" />
+</Cards>

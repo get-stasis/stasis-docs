@@ -1,0 +1,242 @@
+---
+title: Python FastAPI
+description: Python FastAPI application with tests and deployment
+icon: Zap
+---
+
+# Python FastAPI Application
+
+CI/CD pipeline for FastAPI applications with testing, linting, and deployment.
+
+## Overview
+
+This pipeline handles FastAPI projects with:
+- Dependency installation
+- Code linting (Ruff, Black)
+- Unit tests (pytest)
+- Type checking (mypy)
+- API documentation generation
+- Deployment
+
+## Use Case
+
+- FastAPI REST APIs
+- FastAPI with SQLAlchemy
+- FastAPI with Celery
+- FastAPI with WebSocket
+
+## Prerequisites
+
+- Python 3.9+ project
+- `requirements.txt` or `pyproject.toml`
+- pytest configured for testing
+
+## Configuration
+
+```yaml
+# runner.yaml
+image:
+  name: "python"
+  tag: "3.11-slim"
+  pull_policy: "IfNotPresent"
+
+on:
+  push:
+    - "main"
+    - "develop"
+  pull_request:
+    - "main"
+
+global_env:
+  PYTHONPATH: "src"
+  PYTHONDONTWRITEBYTECODE: "1"
+
+timeout: 1200  # 20 minutes
+
+steps:
+  setup:
+    type: "pre"
+    scripts:
+      - python --version
+      - pip --version
+      - pip install --upgrade pip
+      - pip install -r requirements.txt
+      - pip install -r requirements-dev.txt
+
+  lint:
+    type: "exec"
+    scripts:
+      - |
+        echo "Running Ruff..."
+        ruff check .
+      - |
+        echo "Running Black check..."
+        black --check --diff .
+      - |
+        echo "Running isort check..."
+        isort --check-only --diff .
+    continue_on_error: false
+
+  type_check:
+    type: "exec"
+    scripts:
+      - |
+        echo "Running mypy..."
+        mypy src/ --ignore-missing-imports
+    continue_on_error: true
+
+  test:
+    type: "exec"
+    scripts:
+      - |
+        echo "Running tests with coverage..."
+        pytest \
+          --cov=src \
+          --cov-report=html:coverage/html \
+          --cov-report=xml:coverage/coverage.xml \
+          --cov-report=term-missing \
+          --junitxml=coverage/junit.xml \
+          -v \
+          --tb=short
+    continue_on_error: false
+    timeout: 600
+
+  security_scan:
+    type: "exec"
+    scripts:
+      - |
+        echo "Running safety check..."
+        safety check --full-report
+      - |
+        echo "Running bandit..."
+        bandit -r src/ -f json -o bandit-report.json || true
+    continue_on_error: true
+    artifacts:
+      - "bandit-report.json"
+
+  build_docs:
+    type: "exec"
+    scripts:
+      - |
+        echo "Generating API docs..."
+        python -c "from src.main import app; print(app.openapi())" > openapi.json
+      - |
+        echo "Building MkDocs..."
+        mkdocs build --strict || true
+    continue_on_error: true
+    artifacts:
+      - "openapi.json"
+      - "site/**/*"
+
+  artifacts:
+    type: "post"
+    scripts:
+      - |
+        echo "Build artifacts:"
+        ls -lh coverage/ || true
+        ls -lh site/ || true
+    when: "always"
+    artifacts:
+      - "coverage/**/*"
+      - "openapi.json"
+```
+
+## Step-by-Step Explanation
+
+### Step 1: Setup
+
+```yaml
+setup:
+  type: "pre"
+  scripts:
+    - pip install --upgrade pip
+    - pip install -r requirements.txt
+    - pip install -r requirements-dev.txt
+```
+
+**What it does:**
+- Upgrades pip
+- Installs production dependencies
+- Installs development dependencies
+
+### Step 2: Lint
+
+```yaml
+lint:
+  type: "exec"
+  scripts:
+    - ruff check .
+    - black --check --diff .
+    - isort --check-only --diff .
+```
+
+**What it does:**
+- Runs Ruff for linting
+- Checks code formatting with Black
+- Checks import sorting with isort
+
+### Step 3: Test
+
+```yaml
+test:
+  type: "exec"
+  scripts:
+    - pytest --cov=src --cov-report=html:coverage/html --cov-report=xml:coverage/coverage.xml
+```
+
+**What it does:**
+- Runs all tests with coverage
+- Generates HTML and XML coverage reports
+
+### Step 4: Security Scan
+
+```yaml
+security_scan:
+  type: "exec"
+  scripts:
+    - safety check --full-report
+    - bandit -r src/ -f json -o bandit-report.json || true
+```
+
+**What it does:**
+- Checks for vulnerable dependencies
+- Runs security linting with Bandit
+
+### Step 5: Build Docs
+
+```yaml
+build_docs:
+  type: "exec"
+  scripts:
+    - python -c "from src.main import app; print(app.openapi())" > openapi.json
+    - mkdocs build --strict || true
+```
+
+**What it does:**
+- Generates OpenAPI specification
+- Builds documentation site
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | Database connection URL |
+| `SECRET_KEY` | Yes | Application secret key |
+| `PYTHONPATH` | No | Python path |
+
+## Artifacts
+
+| File | Description |
+|------|-------------|
+| `coverage/html/` | HTML coverage report |
+| `coverage/coverage.xml` | XML coverage report |
+| `openapi.json` | OpenAPI specification |
+| `site/` | Documentation site |
+| `bandit-report.json` | Security scan results |
+
+## Next Steps
+
+<Cards>
+  <Card title="Python Django" href="/docs/ci/examples/python-django" description="Similar Python framework" />
+  <Card title="Docker Multi-Arch" href="/docs/ci/examples/docker-multiarch" description="Containerize FastAPI app" />
+</Cards>

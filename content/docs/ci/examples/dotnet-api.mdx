@@ -1,0 +1,197 @@
+---
+title: .NET API
+description: .NET API application with tests and deployment
+icon: Box
+---
+
+# .NET API Application
+
+CI/CD pipeline for .NET API applications with testing, linting, and deployment.
+
+## Overview
+
+This pipeline handles .NET projects with:
+- Dependency restoration
+- Code analysis
+- Unit tests
+- Build
+- Publish
+- Docker deployment
+
+## Use Case
+
+- .NET Web APIs
+- .NET microservices
+- .NET with Entity Framework
+- .NET with SignalR
+
+## Prerequisites
+
+- .NET 8+ project
+- `*.csproj` configured
+- xUnit/NUnit/MSTest configured
+
+## Configuration
+
+```yaml
+# runner.yaml
+image:
+  name: "mcr.microsoft.com/dotnet/sdk"
+  tag: "8.0"
+  pull_policy: "IfNotPresent"
+
+on:
+  push:
+    - "main"
+    - "develop"
+  tag:
+    - "v*"
+
+global_env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  ASPNETCORE_ENVIRONMENT: "Development"
+
+timeout: 1200  # 20 minutes
+
+steps:
+  setup:
+    type: "pre"
+    scripts:
+      - dotnet --version
+      - |
+        echo "Restoring dependencies..."
+        dotnet restore
+
+  lint:
+    type: "exec"
+    scripts:
+      - |
+        echo "Running code analysis..."
+        dotnet format --verify-no-changes --verbosity diagnostic
+      - |
+        echo "Running security scan..."
+        dotnet list package --vulnerable --include-transitive
+    continue_on_error: false
+
+  test:
+    type: "exec"
+    scripts:
+      - |
+        echo "Running tests..."
+        dotnet test \
+          --configuration Release \
+          --logger "trx;LogFileName=test-results.trx" \
+          --logger "html;LogFileName=test-results.html" \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./coverage
+    continue_on_error: false
+    timeout: 600
+
+  build:
+    type: "exec"
+    scripts:
+      - |
+        echo "Building application..."
+        dotnet build --configuration Release --no-restore
+      - |
+        echo "Publishing application..."
+        dotnet publish \
+          --configuration Release \
+          --no-restore \
+          --output ./publish
+    continue_on_error: false
+
+  artifacts:
+    type: "post"
+    scripts:
+      - |
+        echo "Build artifacts:"
+        ls -lh ./publish/
+        echo ""
+        echo "Test results:"
+        ls -lh ./coverage/
+    when: "always"
+    artifacts:
+      - "publish/**/*"
+      - "coverage/**/*"
+```
+
+## Step-by-Step Explanation
+
+### Step 1: Setup
+
+```yaml
+setup:
+  type: "pre"
+  scripts:
+    - dotnet restore
+```
+
+**What it does:**
+- Restores NuGet packages
+- Caches dependencies
+
+### Step 2: Lint
+
+```yaml
+lint:
+  type: "exec"
+  scripts:
+    - dotnet format --verify-no-changes --verbosity diagnostic
+    - dotnet list package --vulnerable --include-transitive
+```
+
+**What it does:**
+- Checks code formatting
+- Scans for vulnerable packages
+
+### Step 3: Test
+
+```yaml
+test:
+  type: "exec"
+  scripts:
+    - dotnet test --configuration Release --logger "trx;LogFileName=test-results.trx"
+```
+
+**What it does:**
+- Runs all unit tests
+- Generates test reports
+- Collects code coverage
+
+### Step 4: Build
+
+```yaml
+build:
+  type: "exec"
+  scripts:
+    - dotnet build --configuration Release --no-restore
+    - dotnet publish --configuration Release --no-restore --output ./publish
+```
+
+**What it does:**
+- Builds the application
+- Publishes for deployment
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ASPNETCORE_ENVIRONMENT` | No | Environment name |
+| `ConnectionStrings__DefaultConnection` | Yes | Database connection |
+
+## Artifacts
+
+| File | Description |
+|------|-------------|
+| `publish/` | Published application |
+| `coverage/` | Test coverage reports |
+| `test-results.trx` | Test results |
+
+## Next Steps
+
+<Cards>
+  <Card title="Java Spring" href="/docs/ci/examples/java-spring" description="Similar Java framework" />
+  <Card title="Docker Multi-Arch" href="/docs/ci/examples/docker-multiarch" description="Containerize .NET app" />
+</Cards>

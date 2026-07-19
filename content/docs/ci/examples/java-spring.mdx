@@ -1,0 +1,286 @@
+---
+title: Java Spring
+description: Java Spring Boot application with tests and deployment
+icon: Coffee
+---
+
+# Java Spring Boot Application
+
+CI/CD pipeline for Spring Boot applications with testing, linting, and deployment.
+
+## Overview
+
+This pipeline handles Spring Boot projects with:
+- Dependency resolution (Maven/Gradle)
+- Code analysis (SpotBugs, Checkstyle)
+- Unit and integration tests (JUnit)
+- Build
+- Docker image creation
+- Deployment
+
+## Use Case
+
+- Spring Boot REST APIs
+- Spring Boot microservices
+- Spring Boot with Spring Data
+- Spring Boot with Spring Security
+
+## Prerequisites
+
+- Java 17+ project
+- `pom.xml` or `build.gradle` configured
+- JUnit configured for testing
+
+## Configuration
+
+```yaml
+# runner.yaml
+image:
+  name: "eclipse-temurin"
+  tag: "21-jdk"
+  pull_policy: "IfNotPresent"
+
+on:
+  push:
+    - "main"
+    - "develop"
+  tag:
+    - "v*"
+
+global_env:
+  JAVA_HOME: "/usr/local/openjdk-21"
+  MAVEN_OPTS: "-Xmx1024m"
+
+timeout: 1800  # 30 minutes
+
+steps:
+  setup:
+    type: "pre"
+    scripts:
+      - java --version
+      - mvn --version
+      - |
+        echo "Downloading dependencies..."
+        mvn dependency:resolve
+
+  lint:
+    type: "exec"
+    scripts:
+      - |
+        echo "Running Checkstyle..."
+        mvn checkstyle:check
+      - |
+        echo "Running SpotBugs..."
+        mvn spotbugs:check
+    continue_on_error: false
+
+  test:
+    type: "exec"
+    scripts:
+      - |
+        echo "Running tests..."
+        mvn test \
+          -Dmaven.test.failure.ignore=false
+      - |
+        echo "Generating test reports..."
+        mvn surefire-report:report
+    continue_on_error: false
+    timeout: 600
+
+  integration_test:
+    type: "exec"
+    scripts:
+      - |
+        echo "Running integration tests..."
+        mvn verify \
+          -DskipUnitTests=true \
+          -Dmaven.test.failure.ignore=false
+    continue_on_error: false
+    timeout: 600
+
+  security_scan:
+    type: "exec"
+    scripts:
+      - |
+        echo "Running OWASP dependency check..."
+        mvn org.owasp:dependency-check-maven:check
+      - |
+        echo "Generating security report..."
+        mvn org.owasp:dependency-check-maven:aggregate
+    continue_on_error: true
+    artifacts:
+      - "target/dependency-check-report.html"
+
+  build:
+    type: "exec"
+    scripts:
+      - |
+        echo "Building application..."
+        mvn package -DskipTests
+      - |
+        echo "JAR size:"
+        ls -lh target/*.jar
+    continue_on_error: false
+
+  docker_build:
+    type: "exec"
+    scripts:
+      - |
+        echo "Building Docker image..."
+        docker build -t ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} .
+      - |
+        echo "Tagging image..."
+        docker tag ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} ${IMAGE_NAME}:latest
+    envs:
+      IMAGE_NAME: "myapp"
+    if_condition: "CI_TAG != '' || CI_BRANCH == 'main'"
+    continue_on_error: false
+
+  artifacts:
+    type: "post"
+    scripts:
+      - |
+        echo "Build artifacts:"
+        ls -lh target/*.jar
+        echo ""
+        echo "Test reports:"
+        ls -lh target/site/
+    when: "always"
+    artifacts:
+      - "target/*.jar"
+      - "target/site/**/*"
+```
+
+## Step-by-Step Explanation
+
+### Step 1: Setup
+
+```yaml
+setup:
+  type: "pre"
+  scripts:
+    - mvn dependency:resolve
+```
+
+**What it does:**
+- Downloads Maven dependencies
+- Caches dependencies
+
+### Step 2: Lint
+
+```yaml
+lint:
+  type: "exec"
+  scripts:
+    - mvn checkstyle:check
+    - mvn spotbugs:check
+```
+
+**What it does:**
+- Runs Checkstyle for code style
+- Runs SpotBugs for bug detection
+
+### Step 3: Test
+
+```yaml
+test:
+  type: "exec"
+  scripts:
+    - mvn test -Dmaven.test.failure.ignore=false
+    - mvn surefire-report:report
+```
+
+**What it does:**
+- Runs JUnit tests
+- Generates test reports
+
+### Step 4: Integration Test
+
+```yaml
+integration_test:
+  type: "exec"
+  scripts:
+    - mvn verify -DskipUnitTests=true -Dmaven.test.failure.ignore=false
+```
+
+**What it does:**
+- Runs integration tests
+- Uses Testcontainers or embedded services
+
+### Step 5: Security Scan
+
+```yaml
+security_scan:
+  type: "exec"
+  scripts:
+    - mvn org.owasp:dependency-check-maven:check
+```
+
+**What it does:**
+- Scans for vulnerable dependencies
+- Generates security report
+
+### Step 6: Build
+
+```yaml
+build:
+  type: "exec"
+  scripts:
+    - mvn package -DskipTests
+```
+
+**What it does:**
+- Builds executable JAR
+- Skips tests (already ran)
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `JAVA_HOME` | No | Java installation path |
+| `MAVEN_OPTS` | No | Maven options |
+| `SPRING_PROFILES_ACTIVE` | No | Spring profiles |
+
+## Artifacts
+
+| File | Description |
+|------|-------------|
+| `target/*.jar` | Executable JAR |
+| `target/site/` | Test reports |
+| `target/dependency-check-report.html` | Security report |
+
+## Gradle Variant
+
+For Gradle projects:
+
+```yaml
+steps:
+  setup:
+    type: "pre"
+    scripts:
+      - ./gradlew dependencies
+
+  lint:
+    type: "exec"
+    scripts:
+      - ./gradlew checkstyleMain checkstyleTest
+      - ./gradlew spotbugsMain
+
+  test:
+    type: "exec"
+    scripts:
+      - ./gradlew test
+      - ./gradlew jacocoTestReport
+
+  build:
+    type: "exec"
+    scripts:
+      - ./gradlew bootJar
+```
+
+## Next Steps
+
+<Cards>
+  <Card title=".NET API" href="/docs/ci/examples/dotnet-api" description="Similar Java framework" />
+  <Card title="Docker Multi-Arch" href="/docs/ci/examples/docker-multiarch" description="Containerize Spring app" />
+</Cards>
