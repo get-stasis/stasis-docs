@@ -6,6 +6,8 @@
     "index",
     "---Deployment---",
     "docker",
+    "docker-ghcr",
+    "docker-compose",
     "nginx",
     "ssl",
     "---Operations---",

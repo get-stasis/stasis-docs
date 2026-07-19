@@ -12,6 +12,14 @@
     "runner-guide/runner-yaml",
     "runner-guide/artifacts",
     "runner-guide/conditions",
+    "---Examples---",
+    "examples/go-binary",
+    "examples/python-django",
+    "examples/rust-cargo",
+    "examples/react-spa",
+    "examples/docker-multiarch",
+    "examples/terraform-infra",
+    "examples/security-scan",
     "---API Reference---",
     "...api"
   ]
