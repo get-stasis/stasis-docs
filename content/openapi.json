@@ -3709,7 +3709,7 @@
         ],
         "summary": "Get tree with path",
         "description": "Get file tree for a reference and path",
-        "operationId": "handler_RepoHandler_GetTree",
+        "operationId": "handler_RepoHandler_GetTreeWithPath",
         "parameters": [
           {
             "name": "owner",
