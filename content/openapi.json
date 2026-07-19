@@ -309,7 +309,7 @@
         ],
         "summary": "Get packs info",
         "description": "Discover available packs",
-        "operationId": "handler_GitHandler_HandleGetInfoPacks",
+        "operationId": "handler_GitHandler_HandleGetInfoPacks_1",
         "parameters": [
           {
             "name": "owner",
@@ -345,7 +345,7 @@
         ],
         "summary": "Get pack file",
         "description": "Download a pack file",
-        "operationId": "handler_GitHandler_HandleGetObject",
+        "operationId": "handler_GitHandler_HandleGetObject_1",
         "parameters": [
           {
             "name": "owner",
@@ -433,7 +433,7 @@
         ],
         "summary": "Get tag ref",
         "description": "Get specific tag reference",
-        "operationId": "handler_GitHandler_HandleGetRefs",
+        "operationId": "handler_GitHandler_HandleGetRefs_1",
         "parameters": [
           {
             "name": "owner",
@@ -5058,7 +5058,7 @@
         ],
         "summary": "Check OpenAPI Spec",
         "description": "Check availability of the OpenAPI specification",
-        "operationId": "router_Router_docsRouter_RouterGroup_StaticFile_func2",
+        "operationId": "router_Router_docsRouter_RouterGroup_StaticFile_func2_1",
         "responses": {
           "200": {
             "description": "OpenAPI YAML file is available"
