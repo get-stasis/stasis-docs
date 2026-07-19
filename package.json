@@ -2,6 +2,7 @@
   "name": "status-docs-nextjs",
   "version": "0.0.6",
   "private": true,
+  "packageManager": "bun@1.2.15",
   "scripts": {
     "build": "npm run gen-api && next build",
     "dev": "npm run gen-api && next dev",
