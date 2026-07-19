@@ -1,0 +1,209 @@
+---
+title: Docker Multi-Arch
+description: Build and push Docker images for multiple architectures
+icon: Container
+---
+
+# Docker Multi-Architecture Builds
+
+Build and push Docker images for multiple architectures (amd64, arm64).
+
+## Overview
+
+This pipeline builds Docker images for:
+- linux/amd64 (x86_64)
+- linux/arm64 (Apple Silicon, AWS Graviton)
+
+And creates a multi-arch manifest for automatic platform selection.
+
+## Use Case
+
+- Production container images
+- Apple Silicon support
+- ARM server deployment (AWS Graviton, Ampere)
+- Edge computing (Raspberry Pi, Jetson)
+
+## Prerequisites
+
+- Dockerfile in repository
+- Docker Hub or GHCR account
+- Docker Buildx support
+
+## Configuration
+
+```yaml
+# runner.yaml
+image:
+  name: "docker"
+  tag: "24-cli"
+  pull_policy: "IfNotPresent"
+
+on:
+  push:
+    - "main"
+  tag:
+    - "v*"
+
+global_env:
+  DOCKER_BUILDKIT: "1"
+  IMAGE_NAME: "myapp"
+
+timeout: 2400  # 40 minutes
+
+steps:
+  setup:
+    type: "pre"
+    scripts:
+      - docker --version
+      - docker buildx version
+      - |
+        echo "Setting up QEMU for cross-compilation..."
+        docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+      - |
+        echo "Creating buildx builder..."
+        docker buildx create --name multiarch --driver docker-container --use
+      - docker buildx inspect --bootstrap
+
+  build_amd64:
+    type: "exec"
+    scripts:
+      - |
+        echo "Building amd64 image..."
+        docker buildx build \
+          --platform linux/amd64 \
+          --tag ${IMAGE_NAME}:latest-amd64 \
+          --load \
+          .
+    continue_on_error: false
+
+  build_arm64:
+    type: "exec"
+    scripts:
+      - |
+        echo "Building arm64 image..."
+        docker buildx build \
+          --platform linux/arm64 \
+          --tag ${IMAGE_NAME}:latest-arm64 \
+          --load \
+          .
+    continue_on_error: false
+
+  push:
+    type: "exec"
+    scripts:
+      - |
+        echo "Logging into registry..."
+        echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+      - |
+        echo "Pushing images..."
+        docker push ${IMAGE_NAME}:latest-amd64
+        docker push ${IMAGE_NAME}:latest-arm64
+    envs:
+      DOCKER_USERNAME: "${DOCKERHUB_USERNAME}"
+      DOCKER_PASSWORD: "${DOCKERHUB_TOKEN}"
+    if_condition: "CI_TAG != '' || CI_BRANCH == 'main'"
+    continue_on_error: false
+
+  manifest:
+    type: "exec"
+    scripts:
+      - |
+        echo "Creating multi-arch manifest..."
+        docker manifest create ${IMAGE_NAME}:latest \
+          ${IMAGE_NAME}:latest-amd64 \
+          ${IMAGE_NAME}:latest-arm64
+      - |
+        echo "Pushing manifest..."
+        docker manifest push ${IMAGE_NAME}:latest
+    if_condition: "CI_TAG != '' || CI_BRANCH == 'main'"
+    continue_on_error: false
+```
+
+## Step-by-Step Explanation
+
+### Step 1: Setup
+
+```yaml
+setup:
+  type: "pre"
+  scripts:
+    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    - docker buildx create --name multiarch --driver docker-container --use
+    - docker buildx inspect --bootstrap
+```
+
+**What it does:**
+- Sets up QEMU for cross-compilation
+- Creates a buildx builder instance
+- Bootstraps the builder
+
+### Step 2-3: Build
+
+```yaml
+build_amd64:
+  type: "exec"
+  scripts:
+    - docker buildx build --platform linux/amd64 --tag ${IMAGE_NAME}:latest-amd64 --load .
+```
+
+**What it does:**
+- Builds image for specific architecture
+- Loads into local Docker daemon
+
+### Step 4: Push
+
+```yaml
+push:
+  type: "exec"
+  scripts:
+    - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+    - docker push ${IMAGE_NAME}:latest-amd64
+    - docker push ${IMAGE_NAME}:latest-arm64
+```
+
+**What it does:**
+- Logs into Docker registry
+- Pushes architecture-specific images
+
+### Step 5: Manifest
+
+```yaml
+manifest:
+  type: "exec"
+  scripts:
+    - docker manifest create ${IMAGE_NAME}:latest ${IMAGE_NAME}:latest-amd64 ${IMAGE_NAME}:latest-arm64
+    - docker manifest push ${IMAGE_NAME}:latest
+```
+
+**What it does:**
+- Creates multi-arch manifest
+- Pushes manifest to registry
+- Users can pull with `docker pull ${IMAGE_NAME}:latest` and get correct architecture
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DOCKERHUB_USERNAME` | Yes | Docker Hub username |
+| `DOCKERHUB_TOKEN` | Yes | Docker Hub access token |
+| `IMAGE_NAME` | No | Image name (default: myapp) |
+
+## GHCR Variant
+
+To push to GitHub Container Registry:
+
+```yaml
+push:
+  type: "exec"
+  scripts:
+    - echo "${GITHUB_TOKEN}" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
+    - docker push ghcr.io/${GITHUB_REPOSITORY_OWNER}/${IMAGE_NAME}:latest-amd64
+    - docker push ghcr.io/${GITHUB_REPOSITORY_OWNER}/${IMAGE_NAME}:latest-arm64
+```
+
+## Next Steps
+
+<Cards>
+  <Card title="Security Scan" href="/docs/ci/examples/security-scan" description="Scan images for vulnerabilities" />
+  <Card title="Go Binary" href="/docs/ci/examples/go-binary" description="Cross-compile Go binaries" />
+</Cards>

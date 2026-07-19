@@ -20,6 +20,11 @@
     "examples/docker-multiarch",
     "examples/terraform-infra",
     "examples/security-scan",
+    "examples/ruby-rails",
+    "examples/dotnet-api",
+    "examples/php-laravel",
+    "examples/python-fastapi",
+    "examples/java-spring",
     "---API Reference---",
     "...api"
   ]

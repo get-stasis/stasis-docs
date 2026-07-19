@@ -1,0 +1,265 @@
+---
+title: Terraform
+description: Infrastructure as Code with plan, apply, and destroy
+icon: Server
+---
+
+# Terraform Infrastructure
+
+CI/CD pipeline for Terraform infrastructure with plan, apply, and destroy.
+
+## Overview
+
+This pipeline handles Terraform projects with:
+- Terraform initialization
+- Format checking
+- Validation
+- Plan generation
+- Plan review
+- Apply execution
+- Destroy (manual)
+- State management
+
+## Use Case
+
+- AWS infrastructure
+- GCP infrastructure
+- Azure infrastructure
+- Multi-cloud deployments
+
+## Prerequisites
+
+- Terraform project
+- Cloud provider credentials
+- Remote state backend (S3, GCS, etc.)
+
+## Configuration
+
+```yaml
+# runner.yaml
+image:
+  name: "hashicorp/terraform"
+  tag: "1.7"
+  pull_policy: "IfNotPresent"
+
+on:
+  push:
+    - "main"
+  pull_request:
+    - "main"
+
+global_env:
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+  TF_LOG: "WARN"
+
+timeout: 1800  # 30 minutes
+
+steps:
+  setup:
+    type: "pre"
+    scripts:
+      - terraform version
+      - terraform init -backend=false
+
+  fmt:
+    type: "exec"
+    scripts:
+      - |
+        echo "Checking formatting..."
+        terraform fmt -check -recursive -diff
+    continue_on_error: false
+
+  validate:
+    type: "exec"
+    scripts:
+      - |
+        echo "Validating configuration..."
+        terraform validate
+    continue_on_error: false
+
+  plan:
+    type: "exec"
+    scripts:
+      - |
+        echo "Generating plan..."
+        terraform plan -out=tfplan -input=false
+      - |
+        echo "Plan summary:"
+        terraform show -no-color tfplan | head -100
+      - |
+        echo "Saving plan as artifact..."
+        terraform show -json tfplan > tfplan.json
+    envs:
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+      AWS_DEFAULT_REGION: "us-east-1"
+    continue_on_error: false
+    artifacts:
+      - "tfplan"
+      - "tfplan.json"
+
+  apply:
+    type: "exec"
+    scripts:
+      - |
+        echo "Applying infrastructure changes..."
+        terraform apply -auto-approve -input=false tfplan
+      - |
+        echo "Outputs:"
+        terraform output -json
+    envs:
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+      AWS_DEFAULT_REGION: "us-east-1"
+    if_condition: "CI_BRANCH == 'main' && CI_EVENT == 'push'"
+    continue_on_error: false
+
+  destroy:
+    type: "exec"
+    scripts:
+      - |
+        echo "WARNING: This will destroy all infrastructure!"
+        echo "Destroying infrastructure..."
+        terraform destroy -auto-approve -input=false
+    envs:
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+      AWS_DEFAULT_REGION: "us-east-1"
+    if_condition: "CI_TAG == 'destroy'"
+    continue_on_error: false
+```
+
+## Step-by-Step Explanation
+
+### Step 1: Setup
+
+```yaml
+setup:
+  type: "pre"
+  scripts:
+    - terraform version
+    - terraform init -backend=false
+```
+
+**What it does:**
+- Verifies Terraform installation
+- Initializes without backend (for validation)
+
+### Step 2: Format Check
+
+```yaml
+fmt:
+  type: "exec"
+  scripts:
+    - terraform fmt -check -recursive -diff
+```
+
+**What it does:**
+- Checks HCL formatting
+- Shows diff if formatting issues found
+
+### Step 3: Validate
+
+```yaml
+validate:
+  type: "exec"
+  scripts:
+    - terraform validate
+```
+
+**What it does:**
+- Validates HCL syntax
+- Checks for configuration errors
+
+### Step 4: Plan
+
+```yaml
+plan:
+  type: "exec"
+  scripts:
+    - terraform plan -out=tfplan -input=false
+    - terraform show -no-color tfplan | head -100
+    - terraform show -json tfplan > tfplan.json
+```
+
+**What it does:**
+- Generates execution plan
+- Shows plan summary
+- Saves plan as artifact
+
+### Step 5: Apply
+
+```yaml
+apply:
+  type: "exec"
+  scripts:
+    - terraform apply -auto-approve -input=false tfplan
+    - terraform output -json
+  if_condition: "CI_BRANCH == 'main' && CI_EVENT == 'push'"
+```
+
+**What it does:**
+- Applies infrastructure changes
+- Auto-approves (no manual confirmation)
+- Only applies on main branch
+
+### Step 6: Destroy
+
+```yaml
+destroy:
+  type: "exec"
+  scripts:
+    - terraform destroy -auto-approve -input=false
+  if_condition: "CI_TAG == 'destroy'"
+```
+
+**What it does:**
+- Destroys all infrastructure
+- Only runs on `destroy` tag
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `AWS_ACCESS_KEY_ID` | Yes | AWS access key |
+| `AWS_SECRET_ACCESS_KEY` | Yes | AWS secret key |
+| `AWS_DEFAULT_REGION` | No | AWS region (default: us-east-1) |
+
+## Artifacts
+
+| File | Description |
+|------|-------------|
+| `tfplan` | Binary plan file |
+| `tfplan.json` | JSON plan for cost estimation |
+
+## Customization
+
+### Add cost estimation
+
+```yaml
+cost_estimate:
+  type: "exec"
+  scripts:
+    - curl -fsSL https://raw.githubusercontent.com/infracost/infracost/master/scripts/install.sh | sh
+    - infracost breakdown --path tfplan.json --format table --out-file cost-estimate.txt
+  continue_on_error: true
+```
+
+### Add security scanning
+
+```yaml
+security_scan:
+  type: "exec"
+  scripts:
+    - curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | sh
+    - tfsec . --format table
+  continue_on_error: true
+```
+
+## Next Steps
+
+<Cards>
+  <Card title="Security Scan" href="/docs/ci/examples/security-scan" description="Scan infrastructure" />
+  <Card title="Docker Multi-Arch" href="/docs/ci/examples/docker-multiarch" description="Deploy containers" />
+</Cards>

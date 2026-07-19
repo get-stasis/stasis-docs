@@ -1,0 +1,269 @@
+---
+title: React SPA
+description: React single-page app with Vite, Lighthouse, and S3 deploy
+icon: Globe
+---
+
+# React Single-Page Application
+
+CI/CD pipeline for React SPAs with testing, Lighthouse audits, and S3 deployment.
+
+## Overview
+
+This pipeline handles React applications with:
+- Dependency installation
+- Linting (ESLint, Prettier)
+- Unit testing (Vitest)
+- Production build
+- Lighthouse performance audit
+- S3 deployment
+- CloudFront invalidation
+
+## Use Case
+
+- React applications
+- Vite-based projects
+- Next.js static exports
+- Single-page applications
+
+## Prerequisites
+
+- React project with `package.json`
+- AWS S3 bucket configured
+- CloudFront distribution (optional)
+
+## Configuration
+
+```yaml
+# runner.yaml
+image:
+  name: "node"
+  tag: "20-slim"
+  pull_policy: "IfNotPresent"
+
+on:
+  push:
+    - "main"
+    - "develop"
+  tag:
+    - "v*"
+
+global_env:
+  NODE_ENV: "production"
+  CI: "true"
+
+timeout: 1200  # 20 minutes
+
+steps:
+  setup:
+    type: "pre"
+    scripts:
+      - node --version
+      - npm --version
+      - npm ci --prefer-offline --no-audit
+
+  lint:
+    type: "exec"
+    scripts:
+      - |
+        echo "Running ESLint..."
+        npm run lint -- --max-warnings 0
+      - |
+        echo "Checking Prettier..."
+        npx prettier --check "src/**/*.{ts,tsx,js,jsx,json,css,md}"
+    continue_on_error: false
+
+  type_check:
+    type: "exec"
+    scripts:
+      - |
+        echo "Running TypeScript type check..."
+        npx tsc --noEmit
+    continue_on_error: false
+
+  test:
+    type: "exec"
+    scripts:
+      - |
+        echo "Running tests with coverage..."
+        npm run test -- --coverage --reporter=junit --outputFile=coverage/junit.xml
+    continue_on_error: false
+    timeout: 300
+
+  build:
+    type: "exec"
+    scripts:
+      - |
+        echo "Building for production..."
+        npm run build
+      - |
+        echo "Build size:"
+        du -sh dist/ || du -sh build/
+    envs:
+      VITE_API_URL: "${API_URL}"
+      VITE_APP_VERSION: "${CI_COMMIT_SHORT_SHA}"
+    continue_on_error: false
+
+  lighthouse:
+    type: "exec"
+    scripts:
+      - |
+        echo "Installing Lighthouse..."
+        npm install -g @lhci/cli
+      - |
+        echo "Running Lighthouse audit..."
+        lhci autorun --config=.lighthouserc.json || true
+    continue_on_error: true
+    artifacts:
+      - ".lighthouseci/**/*"
+
+  deploy_staging:
+    type: "exec"
+    scripts:
+      - |
+        echo "Deploying to staging..."
+        aws s3 sync dist/ s3://${S3_BUCKET_STAGING} --delete
+      - |
+        echo "Invalidating CloudFront..."
+        aws cloudfront create-invalidation \
+          --distribution-id ${CLOUDFRONT_STAGING_ID} \
+          --paths "/*"
+    envs:
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+    if_condition: "CI_BRANCH == 'develop'"
+    continue_on_error: false
+
+  deploy_production:
+    type: "exec"
+    scripts:
+      - |
+        echo "Deploying to production..."
+        aws s3 sync dist/ s3://${S3_BUCKET_PRODUCTION} --delete
+      - |
+        echo "Invalidating CloudFront..."
+        aws cloudfront create-invalidation \
+          --distribution-id ${CLOUDFRONT_PRODUCTION_ID} \
+          --paths "/*"
+    envs:
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+    if_condition: "CI_TAG != ''"
+    continue_on_error: false
+```
+
+## Step-by-Step Explanation
+
+### Step 1: Setup
+
+```yaml
+setup:
+  type: "pre"
+  scripts:
+    - npm ci --prefer-offline --no-audit
+```
+
+**What it does:**
+- Installs dependencies from lockfile
+- Uses cache for faster installs
+
+### Step 2: Lint
+
+```yaml
+lint:
+  type: "exec"
+  scripts:
+    - npm run lint -- --max-warnings 0
+    - npx prettier --check "src/**/*.{ts,tsx,js,jsx,json,css,md}"
+```
+
+**What it does:**
+- Runs ESLint with zero warnings policy
+- Checks code formatting with Prettier
+
+### Step 3: Build
+
+```yaml
+build:
+  type: "exec"
+  scripts:
+    - npm run build
+  envs:
+    VITE_API_URL: "${API_URL}"
+    VITE_APP_VERSION: "${CI_COMMIT_SHORT_SHA}"
+```
+
+**What it does:**
+- Builds production bundle
+- Injects environment variables
+
+### Step 4: Lighthouse
+
+```yaml
+lighthouse:
+  type: "exec"
+  scripts:
+    - npm install -g @lhci/cli
+    - lhci autorun --config=.lighthouserc.json || true
+  continue_on_error: true
+```
+
+**What it does:**
+- Runs performance audit
+- Generates reports
+- Non-blocking
+
+### Step 5: Deploy
+
+```yaml
+deploy_staging:
+  type: "exec"
+  scripts:
+    - aws s3 sync dist/ s3://${S3_BUCKET_STAGING} --delete
+    - aws cloudfront create-invalidation --distribution-id ${CLOUDFRONT_STAGING_ID} --paths "/*"
+  if_condition: "CI_BRANCH == 'develop'"
+```
+
+**What it does:**
+- Syncs build output to S3
+- Invalidates CloudFront cache
+- Only deploys on develop branch
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `API_URL` | Yes | Backend API URL |
+| `AWS_ACCESS_KEY_ID` | For deploy | AWS access key |
+| `AWS_SECRET_ACCESS_KEY` | For deploy | AWS secret key |
+| `S3_BUCKET_STAGING` | For staging | Staging S3 bucket |
+| `S3_BUCKET_PRODUCTION` | For production | Production S3 bucket |
+
+## Lighthouse Configuration
+
+Create `.lighthouserc.json`:
+
+```json
+{
+  "ci": {
+    "collect": {
+      "staticDistDir": "./dist",
+      "numberOfRuns": 3
+    },
+    "assert": {
+      "preset": "lighthouse:recommended",
+      "assertions": {
+        "categories:performance": ["warn", {"minScore": 0.9}],
+        "categories:accessibility": ["error", {"minScore": 0.9}]
+      }
+    }
+  }
+}
+```
+
+## Next Steps
+
+<Cards>
+  <Card title="Python Django" href="/docs/ci/examples/python-django" description="Backend testing" />
+  <Card title="Security Scan" href="/docs/ci/examples/security-scan" description="Scan dependencies" />
+</Cards>
