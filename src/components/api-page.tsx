@@ -1,7 +1,7 @@
-import { createAPIPage } from 'fumadocs-openapi/ui';
-import { openapi } from '@/lib/openapi';
-import client from './api-page.client';
+import { createOpenAPIPage } from 'fumadocs-openapi/ui';
 
-export const APIPage = createAPIPage(openapi, {
-  client,
+export const APIPage = createOpenAPIPage({
+  playground: {
+    enabled: true,
+  },
 });
